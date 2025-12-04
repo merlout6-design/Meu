@@ -4,17 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fritzza - Admin Master</title>
+    
     <!-- React & Tailwind -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+    <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Chewy&display=swap" rel="stylesheet">
+
     <style>
         body { font-family: 'Poppins', sans-serif; background-color: #f3f4f6; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
@@ -25,7 +30,6 @@
         .sidebar { transition: transform 0.3s ease-in-out; }
         @media (max-width: 768px) { .sidebar { transform: translateX(-100%); position: fixed; height: 100%; z-index: 50; } .sidebar.open { transform: translateX(0); } }
         input[type="color"] { -webkit-appearance: none; border: none; width: 40px; height: 40px; border-radius: 8px; overflow: hidden; padding: 0; cursor: pointer; border: 1px solid #ddd; }
-        input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; } input[type="color"]::-webkit-color-swatch { border: none; }
     </style>
 </head>
 <body>
@@ -35,7 +39,7 @@
         if (!firebase.apps.length) { try { firebase.initializeApp(firebaseConfig); } catch (e) {} }
         const auth = firebase.auth(); const db = firebase.firestore(); const APP_ID = "ajuda-2217b"; 
         const getCol = (n) => db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection(n);
-        const { useState, useEffect, useMemo } = React;
+        const { useState, useEffect } = React;
         const formatMoney = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         const calculateSmartPrice = (cost, cmvPercent) => { if (!cost || cost <= 0) return 0; const cmv = cmvPercent || 35; const targetPrice = cost / (cmv / 100); return Math.ceil(targetPrice) - 0.01; };
 
@@ -53,36 +57,36 @@
             const move = (idx, dir) => { if((dir===-1&&idx===0)||(dir===1&&idx===categories.length-1))return; const items = [...categories]; const temp = items[idx]; items[idx] = items[idx+dir]; items[idx+dir] = temp; const b = db.batch(); items.forEach((cat, i) => b.update(getCol('categories').doc(cat.id), {order: i})); b.commit(); }; 
             const ColorInput = ({ label, propKey }) => (<div><label className="text-xs text-gray-500">{label}</label><div className="flex gap-2 items-center"><input type="color" value={data[propKey]||"#000000"} onChange={e=>handleChange(propKey,e.target.value)} /><input type="text" className="border rounded px-2 py-1 text-sm font-mono flex-1 uppercase" value={data[propKey]||""} onChange={e=>handleChange(propKey,e.target.value)} placeholder="#000000" maxLength={7} /></div></div>);
             
-            // --- FUNÇÃO PARA ADICIONAR CHAVES ---
+            // Inserir chaves
             const addKey = (key) => {
                 const area = document.getElementById('msg-template-area');
                 if(area) {
-                    const start = area.selectionStart;
-                    const end = area.selectionEnd;
-                    const text = data.whatsappTemplate || "";
+                    const start = area.selectionStart; const end = area.selectionEnd; const text = data.whatsappTemplate || "";
                     const newText = text.substring(0, start) + key + text.substring(end);
                     handleChange("whatsappTemplate", newText);
-                    setTimeout(() => area.focus(), 100);
-                } else {
-                    handleChange("whatsappTemplate", (data.whatsappTemplate || "") + key);
-                }
+                    setTimeout(() => { area.focus(); area.setSelectionRange(start+key.length, start+key.length); }, 50);
+                } else handleChange("whatsappTemplate", (data.whatsappTemplate || "") + key);
             };
 
-            // --- PLACEHOLDERS ---
+            // Placeholders (A "Colinha")
             const placeholders = [
-                {k: "{nome}", l: "Nome Cliente"}, {k: "{telefone}", l: "Telefone"},
-                {k: "{endereco}", l: "Endereço Completo"}, {k: "{bairro}", l: "Bairro"},
-                {k: "{complemento}", l: "Obs/Complemento"}, {k: "{itens}", l: "Lista de Itens"},
-                {k: "{subtotal}", l: "Subtotal"}, {k: "{entrega}", l: "Taxa Entrega"},
-                {k: "{desconto}", l: "Desconto"}, {k: "{total}", l: "Total Final"},
-                {k: "{pagamento}", l: "Forma Pagto"}, {k: "{troco}", l: "Troco"},
-                {k: "{cupom}", l: "Cód. Cupom"}, {k: "{link_rastreio}", l: "Link Acompanhar"}
+                {k: "{nome}", l: "Nome"}, {k: "{telefone}", l: "Fone"},
+                {k: "{endereco}", l: "Rua e Nº"}, {k: "{bairro}", l: "Bairro"},
+                {k: "{complemento}", l: "Obs (Se houver)"},
+                {k: "{itens}", l: "Lista de Itens"},
+                {k: "{total}", l: "Valor Final"}, {k: "{subtotal}", l: "Subtotal"}, {k: "{entrega}", l: "Taxa"},
+                {k: "{pagamento}", l: "Forma Pagto"},
+                {k: "{troco}", l: "Troco (Se houver)"},
+                {k: "{cupom}", l: "Cupom (Se houver)"},
+                {k: "{link_rastreio}", l: "Link"}
             ];
+
+            const defaultTemplate = "*NOVO PEDIDO - {nome_app}*\n{nome}\n{telefone}\n\n📍 {endereco} - {bairro}\n{complemento}\n\n🛒 *ITENS:*\n{itens}\n\n💰 *RESUMO:*\nSubtotal: {subtotal}\nEntrega: {entrega}\n*TOTAL: {total}*\n\n💳 {pagamento}\n{troco}\n{cupom}\n\n🛵 *Acompanhe:*\n{link_rastreio}";
 
             return ( 
                 <div className="space-y-4">
                     <div className="flex overflow-x-auto gap-2 pb-2 hide-scrollbar">
-                        {[{id: 'visual', icon: 'fa-paintbrush', label: 'Visual'}, {id: 'message', icon: 'fa-comment-dots', label: 'Mensagem WhatsApp'}, {id: 'operation', icon: 'fa-clock', label: 'Operação'}, {id: 'payment', icon: 'fa-credit-card', label: 'Pagamento'}, {id: 'categories', icon: 'fa-list', label: 'Categorias'}].map(t => (
+                        {[{id: 'visual', icon: 'fa-paintbrush', label: 'Visual'}, {id: 'message', icon: 'fa-whatsapp', label: 'Mensagem WhatsApp'}, {id: 'operation', icon: 'fa-clock', label: 'Operação'}, {id: 'payment', icon: 'fa-credit-card', label: 'Pagamento'}, {id: 'categories', icon: 'fa-list', label: 'Categorias'}].map(t => (
                             <button key={t.id} onClick={()=>setTab(t.id)} className={`flex items-center gap-2 px-4 py-2 rounded-full font-bold whitespace-nowrap transition ${tab===t.id ? 'bg-gray-800 text-white shadow-lg' : 'bg-white text-gray-600 border'}`}><i className={`fa-solid ${t.icon}`}></i> {t.label}</button>
                         ))}
                     </div>
@@ -101,12 +105,12 @@
                         )}
                         {tab === 'message' && (
                             <div className="space-y-3">
-                                <div className="bg-blue-50 p-3 rounded text-sm text-blue-800 mb-2"><i className="fa-solid fa-circle-info mr-1"></i> Personalize a mensagem enviada pelo cliente no WhatsApp.</div>
+                                <div className="bg-green-50 p-3 rounded text-sm text-green-800 border border-green-200"><i className="fa-brands fa-whatsapp mr-1"></i> Personalize a mensagem que o cliente envia. As chaves <b>{`{troco}`}</b>, <b>{`{cupom}`}</b> e <b>{`{complemento}`}</b> só aparecem se o cliente preencher.</div>
                                 <label className="font-bold text-gray-700">Modelo da Mensagem</label>
-                                <textarea id="msg-template-area" className="w-full h-64 border p-3 rounded-lg font-mono text-sm bg-gray-50" value={data.whatsappTemplate || "*NOVO PEDIDO*\n{nome}\n{endereco}\n\n{itens}\n\nTotal: {total}\nPagamento: {pagamento}\n\nAcompanhe: {link_rastreio}"} onChange={e=>handleChange("whatsappTemplate", e.target.value)}></textarea>
-                                <div className="flex flex-wrap gap-2 mt-2">
+                                <textarea id="msg-template-area" className="w-full h-80 border p-4 rounded-lg font-mono text-sm bg-gray-50 focus:ring-2 focus:ring-green-500 outline-none" value={data.whatsappTemplate || defaultTemplate} onChange={e=>handleChange("whatsappTemplate", e.target.value)}></textarea>
+                                <div className="flex flex-wrap gap-2 mt-2 p-2 bg-gray-100 rounded border">
                                     {placeholders.map(p => (
-                                        <button key={p.k} onClick={()=>addKey(p.k)} className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-2 py-1 rounded text-xs font-bold border transition">{p.k} <span className="font-normal opacity-70">({p.l})</span></button>
+                                        <button key={p.k} onClick={()=>addKey(p.k)} className="bg-white hover:bg-gray-50 text-gray-700 px-2 py-1 rounded text-xs font-bold border shadow-sm transition active:scale-95" title={p.l}>{p.k}</button>
                                     ))}
                                 </div>
                             </div>
