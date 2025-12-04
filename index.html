@@ -223,11 +223,16 @@
                     const ref = await getCol('orders').add({ customer: form, items: cart, totals: { sub: totalItems, del: del.fee, discount, total: total }, payment: { method: payMethod, change: change }, coupon: appliedCoupon ? appliedCoupon.code : null, createdAt: new Date().toISOString(), status: 'pendente' });
                     if(appliedCoupon) getCol('coupons').doc(appliedCoupon.id).update({ usageCount: firebase.firestore.FieldValue.increment(1) });
                     
-                    const cRef = getCol('customers'); const cSnap = await cRef.where('phoneRaw','==',cleanPhone).limit(1).get();
-                    if(cSnap.empty) cRef.add({ ...form, phoneRaw: cleanPhone, lastOrder: new Date().toISOString(), orderCount: 1 }); else cSnap.docs[0].ref.update({ ...form, lastOrder: new Date().toISOString(), orderCount: firebase.firestore.FieldValue.increment(1) });
+                    const cRef = getCol('customers'); 
+                    const cSnap = await cRef.where('phoneRaw','==',cleanPhone).limit(1).get();
+                    if(cSnap.empty) cRef.add({ ...form, phoneRaw: cleanPhone, lastOrder: new Date().toISOString(), orderCount: 1 });
+                    else cSnap.docs[0].ref.update({ ...form, lastOrder: new Date().toISOString(), orderCount: firebase.firestore.FieldValue.increment(1) });
                     
                     const whatsNumber = (settings.whatsappNumber || "5545988166885").replace(/\D/g, '');
-                    const trackLink = window.location.origin + window.location.pathname.replace('index.html', 'acompanhar.html') + '?fone=' + cleanPhone;
+                    
+                    // CORREÇÃO: GERA O LINK CORRETO PARA A PÁGINA ACOMPANHAR.HTML
+                    const baseUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/')) + '/';
+                    const trackLink = `${baseUrl}acompanhar.html?fone=${cleanPhone}`;
                     
                     // Mensagem Formatada
                     const finalMsg = formatMessage(
@@ -245,7 +250,11 @@
                     
                     closeModal(); setCart([]); 
                     window.location.href = `acompanhar.html?fone=${cleanPhone}`;
-                    window.location.href = `https://wa.me/${whatsNumber}?text=${finalMsg}`;
+                    
+                    // Usa window.location.href para tentar abrir o app nativo
+                    setTimeout(() => {
+                        window.location.href = `https://wa.me/${whatsNumber}?text=${finalMsg}`;
+                    }, 500);
                     
                 } catch(e) { closeModal(); showAlert("Erro", "Erro ao enviar: " + e.message); }
             };
@@ -272,5 +281,3 @@
     </script>
 </body>
 </html>
-
-
