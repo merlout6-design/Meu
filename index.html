@@ -178,34 +178,38 @@
             const discount = getDiscount(); const total = Math.max(0, totalItems + del.fee - discount);
             const handlePix = async () => { if (!form.name || !form.phone || !form.cep || !form.number) { showAlert("Atenção", "Preencha todos os dados de entrega antes de gerar o Pix.", "alert"); return; } showLoading("Gerando Pix Automático..."); try { const mpUrl = "https://api.mercadopago.com/v1/payments"; const proxyUrl = "https://corsproxy.io/?" + encodeURIComponent(mpUrl); const payload = { transaction_amount: Number(total.toFixed(2)), description: `Pedido ${settings.appName} - ${form.phone}`, payment_method_id: "pix", payer: { email: "cliente@email.com", first_name: form.name.split(' ')[0], last_name: form.name.split(' ').slice(1).join(' ') || 'Cliente' } }; const res = await fetch(proxyUrl, { method: "POST", headers: { "Authorization": `Bearer ${settings.mercadoPagoToken}`, "Content-Type": "application/json", "X-Idempotency-Key": Date.now().toString() }, body: JSON.stringify(payload) }); const data = await res.json(); if (data.point_of_interaction) { setPixData(data); closeModal(); } else { throw new Error("Resposta inválida do MP"); } } catch (e) { closeModal(); showAlert("Erro", "Não foi possível gerar o Pix.", "error"); } };
             
-            // === FUNÇÃO DE FORMATAÇÃO DA MENSAGEM WHATSAPP ===
+            // === FORMATADOR DE MENSAGEM INTELIGENTE ===
             const formatMessage = (template, formData, cartItems, totals, paymentInfo, trackingLink) => {
-                let msg = template || "*NOVO PEDIDO*\n{nome}\n{endereco}\n\n{itens}\n\nTotal: {total}\nPagamento: {pagamento}\n\nAcompanhe: {link_rastreio}";
+                let msg = template || "*NOVO PEDIDO*\n{nome}\n{telefone}\n{endereco}\n{complemento}\n\n{itens}\n\nTotal: {total}\nPagamento: {pagamento}\n{troco}\n{cupom}\n\nAcompanhe: {link_rastreio}";
                 
-                // 1. Dados do Cliente
-                msg = msg.replace(/{nome}/g, formData.name);
-                msg = msg.replace(/{telefone}/g, formData.phone);
-                msg = msg.replace(/{endereco}/g, `${formData.address}, ${formData.number}`);
-                msg = msg.replace(/{bairro}/g, `${formData.bairro} (${formData.cep})`);
-                msg = msg.replace(/{complemento}/g, formData.complement || "Sem obs");
+                // Dados Básicos
+                msg = msg.replace(/{nome}/g, formData.name)
+                         .replace(/{telefone}/g, formData.phone)
+                         .replace(/{endereco}/g, `${formData.address}, ${formData.number}`)
+                         .replace(/{bairro}/g, `${formData.bairro} (${formData.cep})`);
+                         
+                // Condicionais Inteligentes (Remove a linha se vazio)
+                const complementoLine = formData.complement ? `📝 Obs: ${formData.complement}` : "";
+                msg = msg.replace(/{complemento}/g, complementoLine);
 
-                // 2. Lista de Itens
+                const trocoLine = paymentInfo.change ? `💵 Troco para: ${paymentInfo.change}` : "";
+                msg = msg.replace(/{troco}/g, trocoLine);
+
+                const cupomLine = paymentInfo.coupon ? `🎟 Cupom: ${paymentInfo.coupon}` : "";
+                msg = msg.replace(/{cupom}/g, cupomLine);
+
+                // Listas e Totais
                 const itemsStr = cartItems.map(i => `▪️ ${i.quantity}x ${i.name} ${i.isBonus?'(GRÁTIS)':''} - ${formatMoney(i.price*i.quantity)}`).join('\n');
-                msg = msg.replace(/{itens}/g, itemsStr);
+                msg = msg.replace(/{itens}/g, itemsStr)
+                         .replace(/{subtotal}/g, formatMoney(totals.sub))
+                         .replace(/{entrega}/g, formatMoney(totals.del))
+                         .replace(/{desconto}/g, formatMoney(totals.discount))
+                         .replace(/{total}/g, formatMoney(totals.total))
+                         .replace(/{pagamento}/g, paymentInfo.method)
+                         .replace(/{link_rastreio}/g, trackingLink);
 
-                // 3. Totais Financeiros
-                msg = msg.replace(/{subtotal}/g, formatMoney(totals.sub));
-                msg = msg.replace(/{entrega}/g, formatMoney(totals.del));
-                msg = msg.replace(/{desconto}/g, formatMoney(totals.discount));
-                msg = msg.replace(/{total}/g, formatMoney(totals.total));
-
-                // 4. Pagamento e Extras
-                msg = msg.replace(/{pagamento}/g, paymentInfo.method);
-                msg = msg.replace(/{troco}/g, paymentInfo.change ? `(Troco p/ ${paymentInfo.change})` : "");
-                msg = msg.replace(/{cupom}/g, paymentInfo.coupon || "Nenhum");
-                msg = msg.replace(/{link_rastreio}/g, trackingLink);
-
-                return encodeURIComponent(msg);
+                // Remove linhas vazias duplas causadas por condicionais vazios
+                return encodeURIComponent(msg.replace(/\n\s*\n/g, '\n\n').trim());
             };
 
             const finishOrder = async () => {
@@ -225,7 +229,7 @@
                     const whatsNumber = (settings.whatsappNumber || "5545988166885").replace(/\D/g, '');
                     const trackLink = window.location.origin + window.location.pathname.replace('index.html', 'acompanhar.html') + '?fone=' + cleanPhone;
                     
-                    // GERA A MENSAGEM USANDO O TEMPLATE
+                    // Mensagem Formatada
                     const finalMsg = formatMessage(
                         settings.whatsappTemplate, 
                         form, 
@@ -241,7 +245,7 @@
                     
                     closeModal(); setCart([]); 
                     window.location.href = `acompanhar.html?fone=${cleanPhone}`;
-                    window.location.href = `https://wa.me/${whatsNumber}?text=${finalMsg}`; // Tenta abrir o App direto
+                    window.location.href = `https://wa.me/${whatsNumber}?text=${finalMsg}`;
                     
                 } catch(e) { closeModal(); showAlert("Erro", "Erro ao enviar: " + e.message); }
             };
