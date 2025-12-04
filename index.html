@@ -79,8 +79,7 @@
                     root.collection('categories').orderBy('order').onSnapshot(s => setCategories(s.docs.map(d => ({ id: d.id, ...d.data() }))));
                     root.collection('products').onSnapshot(s => setProducts(s.docs.map(d => ({ id: d.id, ...d.data() }))));
                     root.collection('neighborhoods').onSnapshot(s => setNeighborhoods(s.docs.map(d => ({ id: d.id, ...d.data() }))));
-                    const lastOrderTime = localStorage.getItem('fritzza_last_order_date'); const lastPhone = localStorage.getItem('fritzza_last_phone');
-                    if (lastOrderTime && lastPhone) { const diff = new Date() - new Date(lastOrderTime); if (diff < 3600000) { window.location.href = `acompanhar.html?fone=${lastPhone}`; } }
+                    // AQUI ESTAVA O PROBLEMA: REMOVIDO O REDIRECIONAMENTO AUTOMÁTICO
                     setLoading(false);
                 }; init();
             }, []);
@@ -229,8 +228,6 @@
                     else cSnap.docs[0].ref.update({ ...form, lastOrder: new Date().toISOString(), orderCount: firebase.firestore.FieldValue.increment(1) });
                     
                     const whatsNumber = (settings.whatsappNumber || "5545988166885").replace(/\D/g, '');
-                    
-                    // CORREÇÃO: GERA O LINK CORRETO PARA A PÁGINA ACOMPANHAR.HTML
                     const baseUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/')) + '/';
                     const trackLink = `${baseUrl}acompanhar.html?fone=${cleanPhone}`;
                     
@@ -249,12 +246,12 @@
                     localStorage.setItem('fritzza_last_phone', cleanPhone);
                     
                     closeModal(); setCart([]); 
-                    window.location.href = `acompanhar.html?fone=${cleanPhone}`;
                     
-                    // Usa window.location.href para tentar abrir o app nativo
+                    // Redireciona primeiro, depois abre o WhatsApp
+                    window.location.href = `acompanhar.html?fone=${cleanPhone}`;
                     setTimeout(() => {
                         window.location.href = `https://wa.me/${whatsNumber}?text=${finalMsg}`;
-                    }, 500);
+                    }, 1000);
                     
                 } catch(e) { closeModal(); showAlert("Erro", "Erro ao enviar: " + e.message); }
             };
