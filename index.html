@@ -4,32 +4,60 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Fritzza - Delivery</title>
-    <!-- React & Tailwind -->
+    
+    <!-- React & ReactDOM -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Firebase -->
+
+    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Chewy&display=swap" rel="stylesheet">
+
     <style>
         body { font-family: 'Poppins', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
         .font-chewy { font-family: 'Chewy', cursive; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
+        
+        /* Animations */
         @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-5px); } 100% { transform: translateY(0px); } }
         .animate-float { animation: float 3s ease-in-out infinite; }
+        
+        /* Toast Animation */
         .toast-enter { animation: toastIn 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards; }
         @keyframes toastIn { from { transform: translate(-50%, -100%); opacity: 0; } to { transform: translate(-50%, 20px); opacity: 1; } }
+        
+        /* Bag Animations */
         .bag-container { transform-origin: bottom center; transition: transform 0.1s; }
         .bag-jump { animation: bagJump 0.6s ease-in-out; }
-        @keyframes bagJump { 0% { transform: translateY(0) scale(1); } 30% { transform: translateY(-15px) scale(1.15) rotate(-5deg); } 50% { transform: translateY(-15px) scale(1.15) rotate(5deg); } 70% { transform: translateY(0) scale(1.05); } 100% { transform: translateY(0) scale(1); } }
+        @keyframes bagJump {
+            0% { transform: translateY(0) scale(1); }
+            30% { transform: translateY(-15px) scale(1.15) rotate(-5deg); }
+            50% { transform: translateY(-15px) scale(1.15) rotate(5deg); }
+            70% { transform: translateY(0) scale(1.05); }
+            100% { transform: translateY(0) scale(1); }
+        }
+        .bag-handle { transform-origin: 50% 100%; transition: transform 0.2s; }
+        .bag-jump .bag-handle { animation: handleOpen 0.6s ease-in-out; }
+        @keyframes handleOpen { 0% { transform: scaleY(1); } 30% { transform: scaleY(0.5) translateY(5px); } 70% { transform: scaleY(1); } }
+
+        /* Custom UI */
         .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.5); }
         .product-card { transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1); }
         .product-card:active { transform: scale(0.98); }
         .flying-img { position: fixed; z-index: 10000; pointer-events: none; border-radius: 50%; box-shadow: 0 5px 15px rgba(0,0,0,0.2); transition: all 0.6s cubic-bezier(0.5, 0.05, 0.5, 0.95); }
+        .step-line { position: absolute; left: 24px; top: 0; bottom: 0; width: 2px; background: #e2e8f0; z-index: 0; }
+        .step-item { position: relative; z-index: 1; }
+        
+        /* Modal */
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; z-index: 9999; animation: fadeIn 0.2s; }
         .modal-box { background: white; padding: 25px; border-radius: 20px; width: 90%; max-width: 350px; text-align: center; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
         @keyframes popIn { from { transform: scale(0.8) translateY(20px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
@@ -40,38 +68,138 @@
 </head>
 <body>
     <div id="root"></div>
+
     <script type="text/babel">
-        const firebaseConfig = { apiKey: "AIzaSyAg2kfoWsvWWyEXQGe8v6jZZqKepgButUk", authDomain: "ajuda-2217b.firebaseapp.com", projectId: "ajuda-2217b", storageBucket: "ajuda-2217b.firebasestorage.app", messagingSenderId: "421083897636", appId: "1:421083897636:web:18bd6097b5c0169427ddb1" };
+        // --- CONFIGURAÇÃO FIREBASE ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyAg2kfoWsvWWyEXQGe8v6jZZqKepgButUk",
+            authDomain: "ajuda-2217b.firebaseapp.com",
+            projectId: "ajuda-2217b",
+            storageBucket: "ajuda-2217b.firebasestorage.app",
+            messagingSenderId: "421083897636",
+            appId: "1:421083897636:web:18bd6097b5c0169427ddb1"
+        };
+
         if (!firebase.apps.length) { try { firebase.initializeApp(firebaseConfig); } catch (e) {} }
-        const auth = firebase.auth(); const db = firebase.firestore(); const APP_ID = "ajuda-2217b"; 
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        const APP_ID = "ajuda-2217b"; 
         const getCol = (n) => db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection(n);
+
         const { useState, useEffect, useMemo, useRef } = React;
         const formatMoney = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         const DEFAULT_COORDS = { lat: -25.0015570, lng: -53.4628300 };
+        const WHATSAPP_NUMBER = "5545988166885";
 
-        const isStoreOpen = (start, end) => { if(!start || !end) return true; const now = new Date(); const current = now.getHours() * 60 + now.getMinutes(); const [sH, sM] = start.split(':').map(Number); const [eH, eM] = end.split(':').map(Number); const startMin = sH * 60 + sM; const endMin = eH * 60 + eM; if (endMin < startMin) return current >= startMin || current <= endMin; else return current >= startMin && current <= endMin; };
-        const GlobalModal = ({ modal, close }) => { if (!modal.isOpen) return null; return ( <div className="modal-overlay" onClick={modal.type === 'alert' ? close : undefined}> <div className="modal-box" onClick={e => e.stopPropagation()}> {modal.type === 'loading' ? ( <div className="py-4"> <div className="loader border-blue-500 border-b-transparent mb-4 mx-auto" style={{borderColor: modal.color || '#3b82f6', borderBottomColor: 'transparent'}}></div> <h3 className="text-lg font-bold text-gray-800">{modal.title}</h3> </div> ) : ( <> <div className={`text-5xl mb-4 ${modal.type === 'error' ? 'text-red-500' : modal.type === 'success' ? 'text-green-500' : 'text-blue-500'}`}> {modal.icon ? <i className={modal.icon}></i> : modal.type === 'error' ? <i className="fa-regular fa-circle-xmark"></i> : modal.type === 'success' ? <i className="fa-regular fa-circle-check"></i> : <i className="fa-solid fa-circle-info"></i>} </div> <h3 className="text-xl font-bold text-gray-800 mb-2">{modal.title}</h3> <p className="text-gray-500 text-sm mb-6 px-2">{modal.message}</p> <div className="flex gap-3"> {modal.type === 'confirm' && <button onClick={close} className="flex-1 py-3 border border-gray-200 rounded-xl text-gray-600 font-bold hover:bg-gray-50 transition">Cancelar</button>} <button onClick={() => { if(modal.onConfirm) modal.onConfirm(); close(); }} className={`flex-1 py-3 rounded-xl text-white font-bold shadow-lg transform active:scale-95 transition ${modal.type === 'error' ? 'bg-red-500' : 'bg-blue-600'}`} style={modal.confirmStyle}>{modal.confirmText || 'OK'}</button> </div> </> )} </div> </div> ); };
-        const Toast = ({ msg }) => { if (!msg) return null; return ( <div className="fixed top-0 left-1/2 bg-gray-900/95 backdrop-blur text-white px-6 py-3 rounded-full shadow-2xl z-[10000] flex items-center gap-3 toast-enter border border-white/10"> <div className="bg-green-500 rounded-full p-1"><i className="fa-solid fa-check text-xs"></i></div> <span className="font-medium text-sm">{msg}</span> </div> ); };
-        const MagicBag = ({ count, isAnimating, color }) => ( <div className={`bag-container relative w-10 h-10 ${isAnimating ? 'bag-jump' : ''}`}> <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full drop-shadow-md"> <path className="bag-handle" d="M8 7V5C8 3.34315 9.34315 2 11 2H13C14.6569 2 16 3.34315 16 5V7" stroke={color} strokeWidth="2" strokeLinecap="round" /> <path d="M5 7H19L20 21H4L5 7Z" fill="white" stroke={color} strokeWidth="2" strokeLinejoin="round" /> <path d="M9 11C9 11 10 12 12 12C14 12 15 11 15 11" stroke={color} strokeWidth="1.5" strokeLinecap="round" opacity="0.3" /> </svg> <div className="absolute top-[10px] left-0 right-0 flex justify-center items-center"> <span className="text-[10px] font-bold text-gray-800 leading-none">{count}</span> </div> </div> );
+        // --- UTILITÁRIOS ---
+        const isStoreOpen = (start, end) => {
+            if(!start || !end) return true; 
+            const now = new Date();
+            const current = now.getHours() * 60 + now.getMinutes();
+            const [sH, sM] = start.split(':').map(Number);
+            const [eH, eM] = end.split(':').map(Number);
+            const startMin = sH * 60 + sM;
+            const endMin = eH * 60 + eM;
+            if (endMin < startMin) return current >= startMin || current <= endMin;
+            else return current >= startMin && current <= endMin;
+        };
 
+        // --- COMPONENTES UI ---
+        const GlobalModal = ({ modal, close }) => {
+            if (!modal.isOpen) return null;
+            return (
+                <div className="modal-overlay" onClick={modal.type === 'alert' ? close : undefined}>
+                    <div className="modal-box" onClick={e => e.stopPropagation()}>
+                        {modal.type === 'loading' ? (
+                            <div className="py-4">
+                                <div className="loader border-blue-500 border-b-transparent mb-4 mx-auto" style={{borderColor: modal.color || '#3b82f6', borderBottomColor: 'transparent'}}></div>
+                                <h3 className="text-lg font-bold text-gray-800">{modal.title}</h3>
+                            </div>
+                        ) : (
+                            <>
+                                <div className={`text-5xl mb-4 ${modal.type === 'error' ? 'text-red-500' : modal.type === 'success' ? 'text-green-500' : 'text-blue-500'}`}>
+                                    {modal.icon ? <i className={modal.icon}></i> : modal.type === 'error' ? <i className="fa-regular fa-circle-xmark"></i> : modal.type === 'success' ? <i className="fa-regular fa-circle-check"></i> : <i className="fa-solid fa-circle-info"></i>}
+                                </div>
+                                <h3 className="text-xl font-bold text-gray-800 mb-2">{modal.title}</h3>
+                                <p className="text-gray-500 text-sm mb-6 px-2">{modal.message}</p>
+                                <div className="flex gap-3">
+                                    {modal.type === 'confirm' && <button onClick={close} className="flex-1 py-3 border border-gray-200 rounded-xl text-gray-600 font-bold hover:bg-gray-50 transition">Cancelar</button>}
+                                    <button onClick={() => { if(modal.onConfirm) modal.onConfirm(); close(); }} className={`flex-1 py-3 rounded-xl text-white font-bold shadow-lg transform active:scale-95 transition ${modal.type === 'error' ? 'bg-red-500' : 'bg-blue-600'}`} style={modal.confirmStyle}>{modal.confirmText || 'OK'}</button>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const Toast = ({ msg }) => {
+            if (!msg) return null;
+            return (
+                <div className="fixed top-0 left-1/2 bg-gray-900/95 backdrop-blur text-white px-6 py-3 rounded-full shadow-2xl z-[10000] flex items-center gap-3 toast-enter border border-white/10">
+                    <div className="bg-green-500 rounded-full p-1"><i className="fa-solid fa-check text-xs"></i></div>
+                    <span className="font-medium text-sm">{msg}</span>
+                </div>
+            );
+        };
+
+        const MagicBag = ({ count, isAnimating, color }) => (
+            <div className={`bag-container relative w-10 h-10 ${isAnimating ? 'bag-jump' : ''}`}>
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full drop-shadow-md">
+                    <path className="bag-handle" d="M8 7V5C8 3.34315 9.34315 2 11 2H13C14.6569 2 16 3.34315 16 5V7" stroke={color} strokeWidth="2" strokeLinecap="round" />
+                    <path d="M5 7H19L20 21H4L5 7Z" fill="white" stroke={color} strokeWidth="2" strokeLinejoin="round" />
+                    <path d="M9 11C9 11 10 12 12 12C14 12 15 11 15 11" stroke={color} strokeWidth="1.5" strokeLinecap="round" opacity="0.3" />
+                </svg>
+                <div className="absolute top-[10px] left-0 right-0 flex justify-center items-center">
+                    <span className="text-[10px] font-bold text-gray-800 leading-none">{count}</span>
+                </div>
+            </div>
+        );
+
+        // --- APP PRINCIPAL ---
         const App = () => {
-            const [view, setView] = useState("menu"); const [cart, setCart] = useState(() => { try { return JSON.parse(localStorage.getItem('fritzza_cart')) || []; } catch(e) { return []; } });
-            const [modal, setModal] = useState({ isOpen: false, type: 'alert' }); const [toast, setToast] = useState(null); const toastTimeoutRef = useRef(null); const [bagAnim, setBagAnim] = useState(false);
-            const [products, setProducts] = useState([]); const [categories, setCategories] = useState([]); const [neighborhoods, setNeighborhoods] = useState([]);
-            const [settings, setSettings] = useState({ appName: "Fritzza", themeColor: "#dc2626", openTime: "18:00", closeTime: "23:00", cardStyle: "grid", borderRadius: "rounded-2xl", restLat: DEFAULT_COORDS.lat, restLng: DEFAULT_COORDS.lng, pricePerKm: 2.00, whatsappNumber: "5545988166885" });
+            const [view, setView] = useState("menu");
+            const [activeOrder, setActiveOrder] = useState(null); 
+            const [cart, setCart] = useState(() => { try { return JSON.parse(localStorage.getItem('fritzza_cart')) || []; } catch(e) { return []; } });
+            
+            const [modal, setModal] = useState({ isOpen: false, type: 'alert' });
+            const [toast, setToast] = useState(null);
+            const toastTimeoutRef = useRef(null);
+            const [bagAnim, setBagAnim] = useState(false);
+            
+            const [products, setProducts] = useState([]);
+            const [categories, setCategories] = useState([]);
+            const [neighborhoods, setNeighborhoods] = useState([]);
+            const [settings, setSettings] = useState({ appName: "Fritzza", themeColor: "#dc2626", openTime: "18:00", closeTime: "23:00", cardStyle: "grid", borderRadius: "rounded-2xl", restLat: DEFAULT_COORDS.lat, restLng: DEFAULT_COORDS.lng, pricePerKm: 2.00 });
             const [loading, setLoading] = useState(true);
 
             const showAlert = (title, message, type='alert', icon=null) => setModal({ isOpen: true, type, title, message, icon });
             const showConfirm = (title, message, onConfirm) => setModal({ isOpen: true, type: 'confirm', title, message, onConfirm });
             const showLoading = (title='Carregando...') => setModal({ isOpen: true, type: 'loading', title, color: settings.themeColor });
             const closeModal = () => setModal({ ...modal, isOpen: false });
-            const showToast = (msg) => { if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current); setToast(null); setTimeout(() => { setToast(msg); toastTimeoutRef.current = setTimeout(() => setToast(null), 3000); }, 50); };
+            
+            const showToast = (msg) => { 
+                if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+                setToast(null); setTimeout(() => { setToast(msg); toastTimeoutRef.current = setTimeout(() => setToast(null), 3000); }, 50);
+            };
 
             useEffect(() => { localStorage.setItem('fritzza_cart', JSON.stringify(cart)); }, [cart]);
+
             useEffect(() => {
                 const init = async () => {
                     if (!auth.currentUser) await auth.signInAnonymously();
                     const root = db.collection('artifacts').doc(APP_ID).collection('public').doc('data');
+                    
+                    // DETECTAR LINK DE RASTREIO NA URL
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const orderParam = urlParams.get('order');
+                    if (orderParam) {
+                        setActiveOrder(orderParam);
+                        setView("status");
+                        setLoading(false);
+                        return;
+                    }
+
                     root.collection('config').doc('main').onSnapshot(d => { 
                         if (d.exists) { 
                             const data = d.data();
@@ -83,18 +211,12 @@
                     root.collection('products').onSnapshot(s => setProducts(s.docs.map(d => ({ id: d.id, ...d.data() }))));
                     root.collection('neighborhoods').onSnapshot(s => setNeighborhoods(s.docs.map(d => ({ id: d.id, ...d.data() }))));
                     
-                    // --- REDIRECIONAMENTO INTELIGENTE (RETORNO DO WHATSAPP) ---
-                    const lastOrderTime = localStorage.getItem('fritzza_last_order_date');
-                    const lastPhone = localStorage.getItem('fritzza_last_phone');
-                    
-                    if (lastOrderTime && lastPhone) {
-                        const diff = new Date() - new Date(lastOrderTime);
-                        // Se fez pedido em menos de 1 hora, redireciona para acompanhar
-                        if (diff < 3600000) { 
-                            window.location.href = `acompanhar.html?fone=${lastPhone}`;
-                        }
+                    const savedOrderId = localStorage.getItem('fritzza_last_order');
+                    if (savedOrderId) {
+                        const savedOrderDate = localStorage.getItem('fritzza_last_order_date');
+                        const isRecent = savedOrderDate && (new Date() - new Date(savedOrderDate)) < 86400000;
+                        if(isRecent) setActiveOrder(savedOrderId);
                     }
-                    
                     setLoading(false);
                 };
                 init();
@@ -102,14 +224,50 @@
 
             const addToCart = (p, e) => {
                 showToast(`${p.name} adicionado!`);
-                const performUpdate = () => { setCart(prev => { const exists = prev.find(i => i.id === p.id); if (exists) return prev.map(i => i.id === p.id ? { ...i, quantity: i.quantity + 1 } : i); return [...prev, { ...p, quantity: 1 }]; }); };
+                const performUpdate = () => {
+                    setCart(prev => {
+                        const exists = prev.find(i => i.id === p.id);
+                        if (exists) return prev.map(i => i.id === p.id ? { ...i, quantity: i.quantity + 1 } : i);
+                        return [...prev, { ...p, quantity: 1 }];
+                    });
+                };
+
                 if(e) {
-                    setBagAnim(true); setTimeout(() => setBagAnim(false), 600);
-                    const card = e.currentTarget.closest('.product-card'); const img = card ? card.querySelector('img') : null; const rect = img ? img.getBoundingClientRect() : card.getBoundingClientRect(); const clone = img ? img.cloneNode(true) : document.createElement('div'); if(!img) { clone.style.backgroundColor = settings.themeColor; clone.style.borderRadius = '50%'; }
-                    clone.style.cssText = `position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;z-index:10000;border-radius:50%;pointer-events:none;transition:all 0.5s cubic-bezier(0.5,0.05,0.5,0.95);box-shadow:0 10px 25px rgba(0,0,0,0.3);object-fit:cover;`; clone.className = 'flying-img'; document.body.appendChild(clone);
-                    const bagElement = document.querySelector('.bag-container'); let destX, destY; if(bagElement) { const dest = bagElement.getBoundingClientRect(); destX = dest.left + (dest.width / 2) - 15; destY = dest.top - 10; } else { destX = window.innerWidth / 2 - 15; destY = window.innerHeight - 90; }
-                    clone.getBoundingClientRect(); setTimeout(() => { clone.style.left = destX + 'px'; clone.style.top = destY + 'px'; clone.style.width = '30px'; clone.style.height = '30px'; clone.style.transform = 'scale(0.8)'; }, 10); setTimeout(() => { clone.style.opacity = '0'; clone.style.transform = 'scale(0.2) translateY(10px)'; performUpdate(); setTimeout(() => clone.remove(), 100); }, 500);
+                    setBagAnim(true);
+                    setTimeout(() => setBagAnim(false), 600);
+                    const card = e.currentTarget.closest('.product-card');
+                    const img = card ? card.querySelector('img') : null;
+                    const rect = img ? img.getBoundingClientRect() : card.getBoundingClientRect();
+                    const clone = img ? img.cloneNode(true) : document.createElement('div');
+                    if(!img) { clone.style.backgroundColor = settings.themeColor; clone.style.borderRadius = '50%'; }
+                    clone.style.cssText = `position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;z-index:10000;border-radius:50%;pointer-events:none;transition:all 0.5s cubic-bezier(0.5,0.05,0.5,0.95);box-shadow:0 10px 25px rgba(0,0,0,0.3);object-fit:cover;`;
+                    clone.className = 'flying-img';
+                    document.body.appendChild(clone);
+
+                    const bagElement = document.querySelector('.bag-container');
+                    let destX, destY;
+                    if(bagElement) {
+                        const dest = bagElement.getBoundingClientRect();
+                        destX = dest.left + (dest.width / 2) - 15; destY = dest.top - 10;
+                    } else {
+                        destX = window.innerWidth / 2 - 15; destY = window.innerHeight - 90; 
+                    }
+                    clone.getBoundingClientRect();
+                    setTimeout(() => { clone.style.left = destX + 'px'; clone.style.top = destY + 'px'; clone.style.width = '30px'; clone.style.height = '30px'; clone.style.transform = 'scale(0.8)'; }, 10);
+                    setTimeout(() => { clone.style.opacity = '0'; clone.style.transform = 'scale(0.2) translateY(10px)'; performUpdate(); setTimeout(() => clone.remove(), 100); }, 500);
                 } else { performUpdate(); }
+            };
+
+            const handleOrderCreated = (orderId) => {
+                setActiveOrder(orderId);
+                localStorage.setItem('fritzza_last_order', orderId);
+                localStorage.setItem('fritzza_last_order_date', new Date().toISOString());
+                setCart([]);
+                setView("status");
+                
+                // Atualiza URL sem recarregar para salvar estado de rastreio se o user der refresh
+                const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?order=' + orderId;
+                window.history.pushState({path:newUrl},'',newUrl);
             };
 
             const themeStyle = { backgroundColor: settings.themeColor || '#dc2626' };
@@ -121,29 +279,45 @@
                 <div className="min-h-screen pb-24 relative overflow-hidden">
                     <GlobalModal modal={modal} close={closeModal} />
                     <Toast msg={toast} />
-                    {view !== 'status' && (
-                        <header className="sticky top-0 z-40 transition-all duration-300">
-                            <div className={`relative overflow-hidden pt-4 pb-12 px-4 shadow-lg ${settings.borderRadius === 'rounded-none' ? '' : 'rounded-b-[2rem]'}`} style={themeStyle}>
-                                {settings.bannerUrl ? <div className="absolute inset-0 z-0"><img src={settings.bannerUrl} className="w-full h-full object-cover opacity-50" /></div> : <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/food.png')]"></div>}
-                                <div className="relative z-10 flex justify-between items-center">
-                                    <div className="flex items-center gap-3 text-white">
-                                        {settings.logoStyle !== 'none' && ( <div className={`flex items-center justify-center ${settings.logoStyle === 'raw' ? '' : 'w-14 h-14 bg-white/20 backdrop-blur border-2 border-white/30 shadow-inner'} ${settings.logoStyle==='circle'?'rounded-full':(settings.logoStyle==='square' ? 'rounded-lg' : '')}`}> {settings.logoUrl ? <img src={settings.logoUrl} className={`${settings.logoStyle === 'raw' ? 'w-16 h-16 object-contain' : 'w-full h-full object-cover'} ${settings.logoStyle==='circle'?'rounded-full':(settings.logoStyle==='square' ? 'rounded-lg' : '')}`} /> : <span className="font-chewy text-2xl">{settings.appName?.[0]}</span>} </div> )}
-                                        <div><h1 className="font-chewy text-3xl leading-none drop-shadow-md" style={{color: settings.appNameColor || '#fff'}}>{settings.appName}</h1><p className="text-white/90 text-xs font-medium tracking-wide drop-shadow-sm">{settings.appSubtitle}</p></div>
+                    
+                    <header className="sticky top-0 z-40 transition-all duration-300">
+                        <div className={`relative overflow-hidden pt-4 pb-12 px-4 shadow-lg ${settings.borderRadius === 'rounded-none' ? '' : 'rounded-b-[2rem]'}`} style={themeStyle}>
+                            {settings.bannerUrl ? <div className="absolute inset-0 z-0"><img src={settings.bannerUrl} className="w-full h-full object-cover opacity-50" /></div> : <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/food.png')]"></div>}
+                            <div className="relative z-10 flex justify-between items-center">
+                                <div className="flex items-center gap-3 text-white">
+                                    {settings.logoStyle !== 'none' && (
+                                        <div className={`flex items-center justify-center ${settings.logoStyle === 'raw' ? '' : 'w-14 h-14 bg-white/20 backdrop-blur border-2 border-white/30 shadow-inner'} ${settings.logoStyle==='circle'?'rounded-full':(settings.logoStyle==='square' ? 'rounded-lg' : '')}`}>
+                                            {settings.logoUrl ? <img src={settings.logoUrl} className={`${settings.logoStyle === 'raw' ? 'w-16 h-16 object-contain' : 'w-full h-full object-cover'} ${settings.logoStyle==='circle'?'rounded-full':(settings.logoStyle==='square' ? 'rounded-lg' : '')}`} /> : <span className="font-chewy text-2xl">{settings.appName?.[0]}</span>}
+                                        </div>
+                                    )}
+                                    <div>
+                                        <h1 className="font-chewy text-3xl leading-none drop-shadow-md" style={{color: settings.appNameColor || '#fff'}}>{settings.appName}</h1>
+                                        <p className="text-white/90 text-xs font-medium tracking-wide drop-shadow-sm">{settings.appSubtitle}</p>
                                     </div>
-                                    <button onClick={()=>window.location.href='acompanhar.html'} className="bg-white/20 backdrop-blur text-white px-3 py-1.5 rounded-full text-xs font-bold border border-white/30 hover:bg-white/30 transition"><i className="fa-solid fa-motorcycle mr-1"></i> Pedidos</button>
                                 </div>
-                                {settings.headerPhrase && <div className="relative z-10 mt-3 text-center"><div className="inline-block bg-black/20 backdrop-blur-sm px-4 py-1 rounded-full text-xs text-white font-medium border border-white/10 shadow-sm"><i className="fa-solid fa-bullhorn mr-1 text-yellow-300"></i> {settings.headerPhrase}</div></div>}
+                                <button onClick={()=>window.location.href='acompanhar.html'} className="bg-white/20 backdrop-blur text-white px-3 py-1.5 rounded-full text-xs font-bold border border-white/30 hover:bg-white/30 transition">
+                                    <i className="fa-solid fa-motorcycle mr-1"></i> Pedidos
+                                </button>
                             </div>
-                        </header>
-                    )}
+                            {settings.headerPhrase && <div className="relative z-10 mt-3 text-center"><div className="inline-block bg-black/20 backdrop-blur-sm px-4 py-1 rounded-full text-xs text-white font-medium border border-white/10 shadow-sm"><i className="fa-solid fa-bullhorn mr-1 text-yellow-300"></i> {settings.headerPhrase}</div></div>}
+                        </div>
+                    </header>
+
                     <main className={`container mx-auto max-w-lg ${view === 'menu' ? '-mt-8' : ''} relative z-20 px-4`}>
                         {view === "menu" && <MenuView products={products} categories={categories} addToCart={addToCart} settings={settings} theme={themeStyle} border={borderStyle} />}
                         {view === "checkout" && <CheckoutView cart={cart} setCart={setCart} settings={settings} neighborhoods={neighborhoods} products={products} onBack={()=>setView("menu")} showAlert={showAlert} showConfirm={showConfirm} showLoading={showLoading} closeModal={closeModal} theme={themeStyle} border={borderStyle} />}
                     </main>
+
                     {view === "menu" && cart.length > 0 && (
                         <div className="fixed bottom-6 left-0 right-0 px-4 z-50 flex justify-center">
                             <button id="cart-fab-btn" onClick={()=>setView("checkout")} className={`w-full max-w-lg p-3 shadow-2xl flex items-center justify-between transform transition hover:scale-[1.02] active:scale-95 text-white ${borderStyle}`} style={{backgroundColor: settings.cartColor || '#16a34a'}}>
-                                <div className="flex items-center gap-4"><MagicBag count={cart.reduce((a,b)=>a+b.quantity,0)} isAnimating={bagAnim} color={settings.cartColor ? '#15803d' : '#16a34a'} /><div className="text-left border-l border-white/20 pl-4"><div className="text-xs opacity-90 font-medium">Meu Carrinho</div><div className="font-bold text-lg leading-none">{formatMoney(cart.reduce((a,b)=>a+(b.price*b.quantity),0))}</div></div></div>
+                                <div className="flex items-center gap-4">
+                                    <MagicBag count={cart.reduce((a,b)=>a+b.quantity,0)} isAnimating={bagAnim} color={settings.cartColor ? '#15803d' : '#16a34a'} />
+                                    <div className="text-left border-l border-white/20 pl-4">
+                                        <div className="text-xs opacity-90 font-medium">Meu Carrinho</div>
+                                        <div className="font-bold text-lg leading-none">{formatMoney(cart.reduce((a,b)=>a+(b.price*b.quantity),0))}</div>
+                                    </div>
+                                </div>
                                 <div className="flex items-center gap-2 font-bold text-sm bg-black/20 px-4 py-2 rounded-xl">Finalizar <i className="fa-solid fa-arrow-right"></i></div>
                             </button>
                         </div>
@@ -153,27 +327,80 @@
         };
 
         const MenuView = ({ products, categories, addToCart, settings, theme, border }) => {
-            const [search, setSearch] = useState(""); const [catSel, setCatSel] = useState("Todas"); const isOpen = isStoreOpen(settings.openTime, settings.closeTime);
-            const filteredProducts = useMemo(() => { let list = products; if (search) list = list.filter(p => p.name.toLowerCase().includes(search.toLowerCase()) || p.description?.toLowerCase().includes(search.toLowerCase())); if (catSel !== "Todas") list = list.filter(p => p.category === catSel); return list; }, [products, search, catSel]);
+            const [search, setSearch] = useState("");
+            const [catSel, setCatSel] = useState("Todas");
+            const isOpen = isStoreOpen(settings.openTime, settings.closeTime);
+            
+            const filteredProducts = useMemo(() => {
+                let list = products;
+                if (search) list = list.filter(p => p.name.toLowerCase().includes(search.toLowerCase()) || p.description?.toLowerCase().includes(search.toLowerCase()));
+                if (catSel !== "Todas") list = list.filter(p => p.category === catSel);
+                return list;
+            }, [products, search, catSel]);
+
             return (
                 <div className="pb-10">
                     <div className={`bg-white shadow-lg p-4 mb-6 glass-panel ${border}`}>
-                        <div className={`flex items-center justify-center gap-2 text-sm font-bold mb-4 ${isOpen ? 'text-green-600' : 'text-red-500'}`}><div className={`w-2 h-2 rounded-full ${isOpen ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>{isOpen ? "Aberto agora" : `Fechado • Abre às ${settings.openTime}`}</div>
-                        <div className="relative"><i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i><input type="text" placeholder="Buscar..." className={`w-full bg-gray-100 border-none py-3 pl-10 pr-4 text-gray-700 focus:ring-2 focus:ring-opacity-50 outline-none transition ${border}`} style={{'--tw-ring-color': settings.themeColor}} value={search} onChange={e=>setSearch(e.target.value)} /></div>
+                        <div className={`flex items-center justify-center gap-2 text-sm font-bold mb-4 ${isOpen ? 'text-green-600' : 'text-red-500'}`}>
+                            <div className={`w-2 h-2 rounded-full ${isOpen ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+                            {isOpen ? "Aberto agora" : `Fechado • Abre às ${settings.openTime}`}
+                        </div>
+                        <div className="relative">
+                            <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                            <input type="text" placeholder="Buscar..." className={`w-full bg-gray-100 border-none py-3 pl-10 pr-4 text-gray-700 focus:ring-2 focus:ring-opacity-50 outline-none transition ${border}`} style={{'--tw-ring-color': settings.themeColor}} value={search} onChange={e=>setSearch(e.target.value)} />
+                        </div>
                     </div>
                     <div className="flex gap-2 overflow-x-auto pb-4 hide-scrollbar mb-2 sticky top-20 z-30 py-2 -mx-4 px-4 bg-gradient-to-b from-[#f8fafc] to-transparent">
                         <button onClick={()=>setCatSel("Todas")} className={`px-4 py-2 text-sm font-bold whitespace-nowrap transition shadow-sm ${catSel==="Todas" ? 'text-white shadow-md transform scale-105' : 'bg-white text-gray-500 border border-gray-100'} ${border}`} style={catSel==="Todas"?theme:{}}>Todas</button>
                         {categories.map(c => (<button key={c.id} onClick={()=>setCatSel(c.name)} className={`px-4 py-2 text-sm font-bold whitespace-nowrap transition shadow-sm ${catSel===c.name ? 'text-white shadow-md transform scale-105' : 'bg-white text-gray-500 border border-gray-100'} ${border}`} style={catSel===c.name?theme:{}}>{c.name}</button>))}
                     </div>
-                    <div className={`space-y-6 ${settings.cardStyle === 'grid' ? '' : 'max-w-md mx-auto'}`}>{filteredProducts.length === 0 ? <div className="text-center py-10 opacity-50"><p>Nenhum produto encontrado.</p></div> : catSel === "Todas" && !search ? categories.map(cat => { const prods = filteredProducts.filter(p => p.category === cat.name); if(prods.length === 0) return null; return <div key={cat.id}><h2 className="font-bold text-lg text-gray-800 mb-3 flex items-center gap-2"><span className="w-1 h-6 rounded-full" style={theme}></span> {cat.name}</h2><div className={`grid gap-4 ${settings.cardStyle === 'grid' ? 'grid-cols-1' : 'grid-cols-1'}`}>{prods.map(p => <ProductCard key={p.id} p={p} addToCart={addToCart} theme={theme} border={border} styleType={settings.cardStyle} />)}</div></div>; }) : <div className={`grid gap-4 ${settings.cardStyle === 'grid' ? 'grid-cols-1' : 'grid-cols-1'}`}>{filteredProducts.map(p => <ProductCard key={p.id} p={p} addToCart={addToCart} theme={theme} border={border} styleType={settings.cardStyle} />)}</div>}</div>
+                    <div className={`space-y-6 ${settings.cardStyle === 'grid' ? '' : 'max-w-md mx-auto'}`}>
+                        {filteredProducts.length === 0 ? <div className="text-center py-10 opacity-50"><p>Nenhum produto encontrado.</p></div> : 
+                        catSel === "Todas" && !search ? categories.map(cat => {
+                            const prods = filteredProducts.filter(p => p.category === cat.name);
+                            if(prods.length === 0) return null;
+                            return <div key={cat.id}><h2 className="font-bold text-lg text-gray-800 mb-3 flex items-center gap-2"><span className="w-1 h-6 rounded-full" style={theme}></span> {cat.name}</h2><div className={`grid gap-4 ${settings.cardStyle === 'grid' ? 'grid-cols-1' : 'grid-cols-1'}`}>{prods.map(p => <ProductCard key={p.id} p={p} addToCart={addToCart} theme={theme} border={border} styleType={settings.cardStyle} />)}</div></div>;
+                        }) : <div className={`grid gap-4 ${settings.cardStyle === 'grid' ? 'grid-cols-1' : 'grid-cols-1'}`}>{filteredProducts.map(p => <ProductCard key={p.id} p={p} addToCart={addToCart} theme={theme} border={border} styleType={settings.cardStyle} />)}</div>}
+                    </div>
                 </div>
             );
         };
 
         const ProductCard = ({ p, addToCart, theme, border, styleType }) => {
-            if (styleType === 'minimal') return <div className={`bg-white p-4 shadow-sm border border-gray-100 flex justify-between items-center group hover:shadow-md transition ${border} product-card`}><div className="flex-1 pr-4"><h3 className="font-bold text-gray-800 leading-tight mb-1">{p.name}</h3><p className="text-xs text-gray-500 line-clamp-1">{p.description}</p><span className="font-bold text-sm text-gray-800 mt-1 block">{formatMoney(p.price)}</span></div><button onClick={(e) => addToCart(p, e)} className="w-8 h-8 rounded-full text-white shadow flex items-center justify-center active:scale-90 transition" style={theme}><i className="fa-solid fa-plus text-xs"></i></button></div>;
-            if (styleType === 'list') return <div className={`bg-white p-3 shadow-sm border border-gray-100 flex gap-3 relative group hover:shadow-md transition ${border} product-card`}>{p.imageUrl && <div className={`w-20 h-20 bg-gray-100 flex-shrink-0 relative overflow-hidden ${border}`}><img src={p.imageUrl} className="w-full h-full object-cover" /></div>}<div className="flex-1 flex flex-col justify-between py-1"><div><h3 className="font-bold text-gray-800 leading-tight mb-1">{p.name}</h3><p className="text-xs text-gray-500 line-clamp-2">{p.description}</p></div><div className="flex justify-between items-end mt-2"><span className="font-bold text-gray-800">{formatMoney(p.price)}</span><button onClick={(e) => addToCart(p, e)} className="w-7 h-7 rounded-full text-white shadow flex items-center justify-center active:scale-90 transition" style={theme}><i className="fa-solid fa-plus text-xs"></i></button></div></div></div>;
-            return <div className={`bg-white p-3 shadow-sm border border-gray-100 flex gap-4 overflow-hidden relative group hover:shadow-md transition ${border} product-card`}><div className={`w-28 h-28 bg-gray-100 flex-shrink-0 relative overflow-hidden ${border}`}>{p.imageUrl ? <img src={p.imageUrl} className="w-full h-full object-cover transition duration-500 group-hover:scale-110" /> : <div className="w-full h-full flex items-center justify-center text-gray-300"><i className="fa-solid fa-utensils text-2xl"></i></div>}</div><div className="flex-1 flex flex-col justify-between py-1"><div><h3 className="font-bold text-gray-800 leading-tight mb-1 line-clamp-2">{p.name}</h3><p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">{p.description}</p></div><div className="flex justify-between items-end mt-2"><span className="font-bold text-lg text-gray-800">{formatMoney(p.price)}</span><button onClick={(e) => addToCart(p, e)} className="w-8 h-8 rounded-full text-white shadow-lg flex items-center justify-center active:scale-90 transition" style={theme}><i className="fa-solid fa-plus text-xs"></i></button></div></div></div>;
+            if (styleType === 'minimal') {
+                return (
+                    <div className={`bg-white p-4 shadow-sm border border-gray-100 flex justify-between items-center group hover:shadow-md transition ${border} product-card`}>
+                        <div className="flex-1 pr-4">
+                            <h3 className="font-bold text-gray-800 leading-tight mb-1">{p.name}</h3>
+                            <p className="text-xs text-gray-500 line-clamp-1">{p.description}</p>
+                            <span className="font-bold text-sm text-gray-800 mt-1 block">{formatMoney(p.price)}</span>
+                        </div>
+                        <button onClick={(e) => addToCart(p, e)} className="w-8 h-8 rounded-full text-white shadow flex items-center justify-center active:scale-90 transition" style={theme}><i className="fa-solid fa-plus text-xs"></i></button>
+                    </div>
+                );
+            }
+            if (styleType === 'list') {
+                return (
+                    <div className={`bg-white p-3 shadow-sm border border-gray-100 flex gap-3 relative group hover:shadow-md transition ${border} product-card`}>
+                        {p.imageUrl && <div className={`w-20 h-20 bg-gray-100 flex-shrink-0 relative overflow-hidden ${border}`}><img src={p.imageUrl} className="w-full h-full object-cover" /></div>}
+                        <div className="flex-1 flex flex-col justify-between py-1">
+                            <div><h3 className="font-bold text-gray-800 leading-tight mb-1">{p.name}</h3><p className="text-xs text-gray-500 line-clamp-2">{p.description}</p></div>
+                            <div className="flex justify-between items-end mt-2"><span className="font-bold text-gray-800">{formatMoney(p.price)}</span><button onClick={(e) => addToCart(p, e)} className="w-7 h-7 rounded-full text-white shadow flex items-center justify-center active:scale-90 transition" style={theme}><i className="fa-solid fa-plus text-xs"></i></button></div>
+                        </div>
+                    </div>
+                );
+            }
+            return (
+                <div className={`bg-white p-3 shadow-sm border border-gray-100 flex gap-4 overflow-hidden relative group hover:shadow-md transition ${border} product-card`}>
+                    <div className={`w-28 h-28 bg-gray-100 flex-shrink-0 relative overflow-hidden ${border}`}>
+                        {p.imageUrl ? <img src={p.imageUrl} className="w-full h-full object-cover transition duration-500 group-hover:scale-110" /> : <div className="w-full h-full flex items-center justify-center text-gray-300"><i className="fa-solid fa-utensils text-2xl"></i></div>}
+                    </div>
+                    <div className="flex-1 flex flex-col justify-between py-1">
+                        <div><h3 className="font-bold text-gray-800 leading-tight mb-1 line-clamp-2">{p.name}</h3><p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">{p.description}</p></div>
+                        <div className="flex justify-between items-end mt-2"><span className="font-bold text-lg text-gray-800">{formatMoney(p.price)}</span><button onClick={(e) => addToCart(p, e)} className="w-8 h-8 rounded-full text-white shadow-lg flex items-center justify-center active:scale-90 transition" style={theme}><i className="fa-solid fa-plus text-xs"></i></button></div>
+                    </div>
+                </div>
+            );
         };
 
         const CheckoutView = ({ cart, setCart, settings, neighborhoods, products, onBack, showAlert, showConfirm, showLoading, closeModal, theme, border }) => {
@@ -206,7 +433,7 @@
                     const cRef = getCol('customers'); const cSnap = await cRef.where('phoneRaw','==',cleanPhone).limit(1).get();
                     if(cSnap.empty) cRef.add({ ...form, phoneRaw: cleanPhone, lastOrder: new Date().toISOString(), orderCount: 1 }); else cSnap.docs[0].ref.update({ ...form, lastOrder: new Date().toISOString(), orderCount: firebase.firestore.FieldValue.increment(1) });
                     
-                    const whatsNumber = (settings.whatsappNumber || "5545988166885").replace(/\D/g, '');
+                    const whatsNumber = settings.whatsappNumber || "5545988166885";
                     let msg = `*NOVO PEDIDO - ${settings.appName.toUpperCase()}*\n📍 ${form.address}, ${form.number} - ${form.bairro}\n${form.complement ? `Obs: ${form.complement}\n` : ''}\n`; 
                     cart.forEach(i => msg += `▪️ ${i.quantity}x ${i.name}\n`); 
                     msg += `\n💰 *Total: ${formatMoney(total)}*`;
@@ -219,7 +446,7 @@
                     
                     closeModal(); setCart([]); 
                     
-                    // Abre WhatsApp com location.href para tentar forçar o App
+                    // Abre WhatsApp sem _blank para tentar forçar o App
                     window.location.href = `https://wa.me/${whatsNumber}?text=${encodeURIComponent(msg)}`;
                     
                 } catch(e) { closeModal(); showAlert("Erro", "Erro ao enviar: " + e.message); }
