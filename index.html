@@ -452,66 +452,54 @@
             const discount = getDiscount(); const total = Math.max(0, totalItems + del.fee - discount);
             const handlePix = async () => { if (!form.name || !form.phone || !form.cep || !form.number) { showAlert("Atenção", "Preencha todos os dados de entrega antes de gerar o Pix.", "alert"); return; } showLoading("Gerando Pix Automático..."); try { const mpUrl = "https://api.mercadopago.com/v1/payments"; const proxyUrl = "https://corsproxy.io/?" + encodeURIComponent(mpUrl); const payload = { transaction_amount: Number(total.toFixed(2)), description: `Pedido ${settings.appName} - ${form.phone}`, payment_method_id: "pix", payer: { email: "cliente@email.com", first_name: form.name.split(' ')[0], last_name: form.name.split(' ').slice(1).join(' ') || 'Cliente' } }; const res = await fetch(proxyUrl, { method: "POST", headers: { "Authorization": `Bearer ${settings.mercadoPagoToken}`, "Content-Type": "application/json", "X-Idempotency-Key": Date.now().toString() }, body: JSON.stringify(payload) }); const data = await res.json(); if (data.point_of_interaction) { setPixData(data); closeModal(); } else { throw new Error("Resposta inválida do MP"); } } catch (e) { closeModal(); showAlert("Erro", "Não foi possível gerar o Pix.", "error"); } };
             
+            // --- NOVA FUNÇÃO PARA FORMATAR MENSAGEM DO TUNEL ---
+            const formatTunnelMessage = (template, data, cartItems, totals, payInfo, link) => {
+                let msg = template || "*NOVO PEDIDO*\n{nome}\n{telefone}\n\n{itens}\n\nTotal: {total}\nLink: {link_rastreio}";
+                const itemsList = cartItems.map(i => `${i.quantity}x ${i.name}`).join('\n');
+                msg = msg.replace(/{nome}/g, data.name).replace(/{telefone}/g, data.phone).replace(/{endereco}/g, `${data.address}, ${data.number}`).replace(/{bairro}/g, data.bairro).replace(/{complemento}/g, data.complement||"").replace(/{itens}/g, itemsList).replace(/{subtotal}/g, formatMoney(totals.sub)).replace(/{entrega}/g, formatMoney(totals.del)).replace(/{desconto}/g, formatMoney(totals.discount)).replace(/{total}/g, formatMoney(totals.total)).replace(/{pagamento}/g, payInfo.method).replace(/{troco}/g, payInfo.change||"").replace(/{cupom}/g, payInfo.coupon||"").replace(/{link_rastreio}/g, link);
+                return msg.replace(/\n\s*\n/g, '\n\n').trim();
+            };
+
             const finishOrder = async () => {
                 if(!form.name || !form.phone || !form.address || !form.number) return showAlert("Ops", "Preencha todos os campos de entrega.");
                 if(!payMethod) return showAlert("Ops", "Selecione o pagamento.");
                 if(del.fee === 0 && del.method !== 'bairro_fixo') return showAlert("Atenção", "Aguardando cálculo do frete...", "alert");
-                
-                showLoading("Enviando...");
+                showLoading("Finalizando...");
                 try {
                     const cleanPhone = form.phone.replace(/\D/g,'');
-                    // Garante o formato 55 + DDD + Numero
-                    let finalPhone = cleanPhone;
-                    if(finalPhone.length >= 10 && finalPhone.length <= 11) finalPhone = '55' + finalPhone;
-
-                    // 1. Salva no Firebase
                     const ref = await getCol('orders').add({ customer: form, items: cart, totals: { sub: totalItems, del: del.fee, discount, total: total }, payment: { method: payMethod, change: change }, coupon: appliedCoupon ? appliedCoupon.code : null, createdAt: new Date().toISOString(), status: 'pendente' });
-                    
                     if(appliedCoupon) getCol('coupons').doc(appliedCoupon.id).update({ usageCount: firebase.firestore.FieldValue.increment(1) });
-                    
                     const cRef = getCol('customers'); const cSnap = await cRef.where('phoneRaw','==',cleanPhone).limit(1).get();
                     if(cSnap.empty) cRef.add({ ...form, phoneRaw: cleanPhone, lastOrder: new Date().toISOString(), orderCount: 1 }); else cSnap.docs[0].ref.update({ ...form, lastOrder: new Date().toISOString(), orderCount: firebase.firestore.FieldValue.increment(1) });
                     
-                    const whatsNumber = (settings.whatsappNumber || "5545988166885").replace(/\D/g, '');
-                    const baseUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/')) + '/';
-                    const trackLink = `${baseUrl}acompanhar.html?order=${ref.id}`;
-                    
-                    // 2. Monta a Mensagem Automática
-                    const messageBody = formatTunnelMessage(
-                        settings.whatsappTemplate, 
-                        form, 
-                        cart, 
-                        { sub: totalItems, del: del.fee, discount, total }, 
-                        { method: payMethod, change, coupon: appliedCoupon?.code }, 
-                        trackLink
-                    );
-
-                    // 3. Tenta enviar pelo TÚNEL (Servidor Local)
-                    if (settings.whatsappServerUrl) {
+                    // --- INTEGRAÇÃO COM SERVIDOR WHATSAPP ---
+                    if(settings.whatsappServerUrl) {
                         try {
+                            const baseUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/')) + '/';
+                            // Correção: Link aponta para acompanhar.html?fone=NUMERO
+                            const trackLink = `${baseUrl}acompanhar.html?fone=${cleanPhone}`;
+                            const plainMsg = formatTunnelMessage(settings.whatsappTemplate, form, cart, { sub: totalItems, del: del.fee, discount, total }, { method: payMethod, change, coupon: appliedCoupon?.code }, trackLink);
+                            
+                            // Formata número para 55
+                            let finalPhone = cleanPhone;
+                            if(finalPhone.length >= 10 && finalPhone.length <= 11) finalPhone = '55' + finalPhone;
+
+                            // Dispara sem esperar (Fire and Forget)
                             fetch(settings.whatsappServerUrl, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    phone: finalPhone,
-                                    message: messageBody
-                                })
-                            }).then(r => console.log("Msg Server Status:", r.status)).catch(e => console.error("Erro Server:", e));
-                        } catch(err) { console.error(err); }
+                                body: JSON.stringify({ phone: finalPhone, message: plainMsg })
+                            });
+                        } catch(err) { console.error("Erro ao tentar enviar WhatsApp automático:", err); }
                     }
-
-                    // 4. Limpa e Redireciona
-                    localStorage.setItem('fritzza_last_order', ref.id); 
-                    localStorage.setItem('fritzza_last_order_date', new Date().toISOString()); 
-                    localStorage.setItem('fritzza_last_phone', cleanPhone);
+                    
+                    localStorage.setItem('fritzza_last_order', ref.id); localStorage.setItem('fritzza_last_order_date', new Date().toISOString()); localStorage.setItem('fritzza_last_phone', cleanPhone);
                     closeModal(); setCart([]); 
                     
-                    // Redireciona para acompanhamento
-                    window.location.href = `acompanhar.html?order=${ref.id}`;
+                    window.location.href = `acompanhar.html?fone=${cleanPhone}`;
                     
                 } catch(e) { closeModal(); showAlert("Erro", "Erro ao enviar: " + e.message); }
             };
-            
             const copyPix = () => { if(pixData?.point_of_interaction?.transaction_data?.qr_code) { navigator.clipboard.writeText(pixData.point_of_interaction.transaction_data.qr_code); showAlert("Sucesso", "Código Pix copiado!", "success"); } };
 
             return (
