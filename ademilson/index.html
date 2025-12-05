@@ -31,8 +31,6 @@
         @media (max-width: 768px) { .sidebar { transform: translateX(-100%); position: fixed; height: 100%; z-index: 50; } .sidebar.open { transform: translateX(0); } }
         input[type="color"] { -webkit-appearance: none; border: none; width: 40px; height: 40px; border-radius: 8px; overflow: hidden; padding: 0; cursor: pointer; border: 1px solid #ddd; }
         input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; } input[type="color"]::-webkit-color-swatch { border: none; }
-        .pulse-dot { width: 10px; height: 10px; background-color: #22c55e; border-radius: 50%; display: inline-block; box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); animation: pulse-green 2s infinite; }
-        @keyframes pulse-green { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); } }
     </style>
 </head>
 <body>
@@ -58,8 +56,60 @@
 
         function printOrderReceipt(order, settings) {
             const w = window.open('', '', 'width=400,height=600');
-            const itemsHtml = order.items.map(i => `<div class="item"><span>${i.quantity}x ${i.name}</span><span>${formatMoney(i.price * i.quantity)}</span></div>${i.obs ? `<div class="obs">Obs: ${i.obs}</div>` : ''}`).join('');
-            w.document.write(`<html><head><title>Pedido #${order.id.slice(-4)}</title><style>body{font-family:'Courier New',monospace;padding:10px;width:300px;margin:0 auto;font-size:12px}.header{text-align:center;border-bottom:1px dashed #000;padding-bottom:10px;margin-bottom:10px}.title{font-size:16px;font-weight:bold}.item{display:flex;justify-content:space-between;margin-bottom:5px;font-weight:bold}.obs{font-size:10px;margin-bottom:5px;font-style:italic}.totals{border-top:1px dashed #000;margin-top:10px;padding-top:10px}.row{display:flex;justify-content:space-between}.total-final{font-size:16px;font-weight:bold;margin-top:5px}.footer{text-align:center;margin-top:20px;font-size:10px}</style></head><body><div class="header"><div class="title">${settings.appName || 'Fritzza'}</div><div>Pedido #${order.id.slice(-4)}</div><div>${new Date(order.createdAt).toLocaleString('pt-BR')}</div></div><div class="info"><b>Cliente:</b> ${order.customer?.name || 'Não inf.'}<br/><b>Tel:</b> ${order.customer?.phone || 'Não inf.'}<br/><b>End:</b> ${order.customer?.address || ''}, ${order.customer?.number || ''}<br/><b>Bairro:</b> ${order.customer?.bairro || ''}<br/><b>Pagamento:</b> ${order.payment?.method} ${order.payment?.change ? '(Troco: '+order.payment.change+')' : ''}</div><div class="items">${itemsHtml}</div><div class="totals"><div class="row"><span>Subtotal:</span><span>${formatMoney(order.totals?.sub || 0)}</span></div><div class="row"><span>Entrega:</span><span>${formatMoney(order.totals?.del || 0)}</span></div><div class="row"><span>Desconto:</span><span>-${formatMoney(order.totals?.discount || 0)}</span></div><div class="row total-final"><span>TOTAL:</span><span>${formatMoney(order.totals?.total || 0)}</span></div></div><div class="footer">Obrigado pela preferência!</div><script>window.print(); window.close();<\/script></body></html>`);
+            const itemsHtml = order.items.map(i => `
+                <div class="item">
+                    <span>${i.quantity}x ${i.name}</span>
+                    <span>${formatMoney(i.price * i.quantity)}</span>
+                </div>
+                ${i.obs ? `<div class="obs">Obs: ${i.obs}</div>` : ''}
+            `).join('');
+
+            w.document.write(`
+                <html>
+                <head>
+                    <title>Pedido #${order.id.slice(-4)}</title>
+                    <style>
+                        body { font-family: 'Courier New', monospace; padding: 10px; width: 300px; margin: 0 auto; font-size: 12px; }
+                        .header { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 10px; margin-bottom: 10px; }
+                        .title { font-size: 16px; font-weight: bold; }
+                        .info { margin-bottom: 10px; }
+                        .item { display: flex; justify-content: space-between; margin-bottom: 5px; font-weight: bold; }
+                        .obs { font-size: 10px; margin-bottom: 5px; font-style: italic; }
+                        .totals { border-top: 1px dashed #000; margin-top: 10px; padding-top: 10px; }
+                        .row { display: flex; justify-content: space-between; }
+                        .total-final { font-size: 16px; font-weight: bold; margin-top: 5px; }
+                        .footer { text-align: center; margin-top: 20px; font-size: 10px; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <div class="title">${settings.appName || 'Fritzza'}</div>
+                        <div>Pedido #${order.id.slice(-4)}</div>
+                        <div>${new Date(order.createdAt).toLocaleString('pt-BR')}</div>
+                    </div>
+                    <div class="info">
+                        <b>Cliente:</b> ${order.customer?.name || 'Não inf.'}<br/>
+                        <b>Tel:</b> ${order.customer?.phone || 'Não inf.'}<br/>
+                        <b>End:</b> ${order.customer?.address || ''}, ${order.customer?.number || ''}<br/>
+                        <b>Bairro:</b> ${order.customer?.bairro || ''}<br/>
+                        <b>Pagamento:</b> ${order.payment?.method} ${order.payment?.change ? '(Troco: '+order.payment.change+')' : ''}
+                    </div>
+                    <div class="items">
+                        ${itemsHtml}
+                    </div>
+                    <div class="totals">
+                        <div class="row"><span>Subtotal:</span><span>${formatMoney(order.totals?.sub || 0)}</span></div>
+                        <div class="row"><span>Entrega:</span><span>${formatMoney(order.totals?.del || 0)}</span></div>
+                        <div class="row"><span>Desconto:</span><span>-${formatMoney(order.totals?.discount || 0)}</span></div>
+                        <div class="row total-final"><span>TOTAL:</span><span>${formatMoney(order.totals?.total || 0)}</span></div>
+                    </div>
+                    <div class="footer">
+                        Obrigado pela preferência!
+                    </div>
+                    <script>window.print(); window.close();<\/script>
+                </body>
+                </html>
+            `);
             w.document.close();
         }
 
@@ -75,9 +125,37 @@
                 if (filter === 'today') return allOrders.filter(o => new Date(o.createdAt) >= today);
                 return allOrders;
             }, [filter, allOrders]);
+            
+            // --- FUNÇÃO DE NOTIFICAÇÃO DE STATUS (INTEGRAÇÃO WHATSAPP) ---
+            const notifyClient = (order, newStatus) => {
+                const phone = order.customer.phone.replace(/\D/g, '');
+                let msg = `*Atualização do Pedido #${order.id.slice(-4)}* - ${settings.appName || 'Fritzza'}\n`;
+                let statusMsg = "";
+
+                if (newStatus === 'confirmado') statusMsg = `✅ *CONFIRMADO!* Seu pedido já está sendo preparado com carinho.`;
+                else if (newStatus === 'preparando') statusMsg = `👨‍🍳 *EM PREPARO!* Estamos caprichando no seu pedido.`;
+                else if (newStatus === 'enviado') statusMsg = `🛵 *SAIU PARA ENTREGA!* Nosso entregador está a caminho.`;
+                else if (newStatus === 'entregue') statusMsg = `🍽️ *ENTREGUE!* Obrigado pela preferência e bom apetite!`;
+                else return; // Não notifica outros status
+
+                msg += statusMsg;
+                
+                // Dispara evento para a extensão capturar (se instalada)
+                window.postMessage({ type: 'SEND_WHATSAPP_MESSAGE', phone: phone, message: msg }, '*');
+                
+                // Fallback: Tenta abrir o link do WhatsApp Web se a extensão não interceptar (opcional, pode ser removido)
+                // window.open(`https://web.whatsapp.com/send?phone=55${phone}&text=${encodeURIComponent(msg)}`, '_blank');
+                
+                console.log("Notificação disparada:", msg);
+            };
+
             const nextStatus = async (order) => {
                 const map = { 'pendente': 'confirmado', 'confirmado': 'preparando', 'preparando': 'enviado', 'enviado': 'entregue' };
-                if(map[order.status]) await getCol('orders').doc(order.id).update({ status: map[order.status] });
+                const newStatus = map[order.status];
+                if(newStatus) {
+                    await getCol('orders').doc(order.id).update({ status: newStatus });
+                    notifyClient(order, newStatus); // <--- CHAMA A NOTIFICAÇÃO AQUI
+                }
             };
             const del = (id) => showConfirm("Excluir", "Excluir pedido?", async () => await getCol('orders').doc(id).delete()); 
 
@@ -96,7 +174,7 @@
                             <div className="mt-3 flex flex-wrap gap-2 text-xs items-center justify-between">
                                 <span className={`uppercase font-bold px-2 py-1 rounded ${x.status==='pendente'?'bg-red-100 text-red-700':x.status==='entregue'?'bg-green-100 text-green-700':'bg-yellow-100 text-yellow-700'}`}>{x.status}</span>
                                 <div className="flex gap-2">
-                                    {x.status !== 'entregue' && <button onClick={()=>nextStatus(x)} className="bg-blue-600 text-white px-3 py-1 rounded font-bold hover:bg-blue-700">Avançar</button>}
+                                    {x.status !== 'entregue' && <button onClick={()=>nextStatus(x)} className="bg-blue-600 text-white px-3 py-1 rounded font-bold hover:bg-blue-700">Avançar (Envia Whats)</button>}
                                     <button onClick={()=>printOrderReceipt(x, settings)} className="bg-gray-200 text-gray-700 px-3 py-1 rounded font-bold hover:bg-gray-300"><i className="fa-solid fa-print"></i></button>
                                     <button onClick={()=>del(x.id)} className="text-red-500 bg-red-50 px-3 py-1 rounded font-bold hover:bg-red-100"><i className="fa-solid fa-trash"></i></button>
                                 </div>
@@ -107,13 +185,12 @@
             ); 
         }
         
-        // --- ADMIN PRODUCTS (COM CÁLCULO IFOOD & GESTÃO COMPLETA) ---
+        // --- ADMIN PRODUCTS ---
         function AdminProducts({products, categories, ingredients, settings, theme, showAlert, showConfirm}) { 
             const [edit, setEdit] = useState(false); 
             const [data, setData] = useState({name:"", price:"", category:"", imageUrl:"", description:"", recipe: []}); 
             const [newIng, setNewIng] = useState({ id: "", qty: "" });
             
-            // Funções de Receita
             const addIngToRecipe = () => { 
                 if(!newIng.id || !newIng.qty) return; 
                 const ing = ingredients.find(i => i.id === newIng.id); 
@@ -123,7 +200,6 @@
             };
             const removeIngFromRecipe = (idx) => { const newRecipe = [...data.recipe]; newRecipe.splice(idx, 1); setData({ ...data, recipe: newRecipe }); };
 
-            // Cálculo de Métricas
             const getMetrics = (prod) => {
                 const recipe = prod.recipe || [];
                 const totalCost = recipe.reduce((acc, item) => {
@@ -132,7 +208,7 @@
                 }, 0);
                 const cmv = settings.targetCMV || 35;
                 const suggested = calculateSmartPrice(totalCost, cmv);
-                const ifood = suggested > 0 ? suggested / 0.73 : 0; // Margem iFood 27%
+                const ifood = suggested > 0 ? suggested / 0.73 : 0; 
                 return { totalCost, suggested, ifood };
             };
             const metrics = getMetrics(data);
@@ -154,61 +230,21 @@
                         <div className="grid grid-cols-2 gap-3"><input required placeholder="Nome" className="border p-2 rounded w-full" value={data.name} onChange={e=>setData({...data, name:e.target.value})} /><select className="border p-2 rounded w-full" value={data.category} onChange={e=>setData({...data, category:e.target.value})}>{categories.map(c=><option key={c.id} value={c.name}>{c.name}</option>)}</select></div>
                         <div className="grid grid-cols-2 gap-3"><input placeholder="URL Imagem" className="border p-2 rounded w-full" value={data.imageUrl} onChange={e=>setData({...data, imageUrl:e.target.value})} /><input type="number" step="0.01" placeholder="Preço (R$)" className="border p-2 rounded w-full font-bold" value={data.price} onChange={e=>setData({...data, price:e.target.value})} /></div>
                         <textarea placeholder="Descrição" className="w-full border p-2 rounded h-20" value={data.description} onChange={e=>setData({...data, description:e.target.value})} />
-                        
-                        {/* FICHA TÉCNICA */}
                         <div className="bg-white p-3 rounded border border-gray-300">
                             <h4 className="font-bold text-gray-700 mb-2 text-sm">Ficha Técnica (Meta CMV: {settings.targetCMV||35}%)</h4>
-                            <div className="flex gap-2 mb-3">
-                                <select className="border p-1 flex-1 text-sm" value={newIng.id} onChange={e=>setNewIng({...newIng, id:e.target.value})}><option value="">+ Insumo</option>{ingredients.map(i=><option key={i.id} value={i.id}>{i.name} ({formatMoney(i.cost)}/{i.unit})</option>)}</select>
-                                <input type="number" step="0.001" placeholder="Qtd" className="border p-1 w-20 text-sm" value={newIng.qty} onChange={e=>setNewIng({...newIng, qty:e.target.value})} />
-                                <button type="button" onClick={addIngToRecipe} className="bg-blue-600 text-white px-3 rounded font-bold">+</button>
-                            </div>
-                            <div className="space-y-1 max-h-32 overflow-y-auto mb-2">
-                                {(data.recipe || []).map((ing, idx) => (
-                                    <div key={idx} className="flex justify-between text-xs bg-gray-50 p-1 rounded border"><span>{ing.name} ({ing.qty}{ing.unit})</span> <button type="button" onClick={()=>removeIngFromRecipe(idx)} className="text-red-500 font-bold">x</button></div>
-                                ))}
-                            </div>
-                            <div className="grid grid-cols-3 gap-2 text-xs border-t pt-2 bg-gray-50 p-2 rounded">
-                                <div>Custo:<br/><b className="text-red-600">{formatMoney(metrics.totalCost)}</b></div>
-                                <div>Sugerido:<br/><b className="text-blue-600">{formatMoney(metrics.suggested)}</b></div>
-                                <div>iFood (27%):<br/><b className="text-orange-600">{formatMoney(metrics.ifood)}</b></div>
-                            </div>
-                            <div className="mt-2">
-                                <button type="button" onClick={()=>setData({...data, price: metrics.suggested})} className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded mr-2">Usar Sugerido</button>
-                                <button type="button" onClick={()=>setData({...data, price: metrics.ifood.toFixed(2)})} className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded">Usar iFood</button>
-                            </div>
+                            <div className="flex gap-2 mb-3"><select className="border p-1 flex-1 text-sm" value={newIng.id} onChange={e=>setNewIng({...newIng, id:e.target.value})}><option value="">+ Insumo</option>{ingredients.map(i=><option key={i.id} value={i.id}>{i.name} ({formatMoney(i.cost)}/{i.unit})</option>)}</select><input type="number" step="0.001" placeholder="Qtd" className="border p-1 w-20 text-sm" value={newIng.qty} onChange={e=>setNewIng({...newIng, qty:e.target.value})} /><button type="button" onClick={addIngToRecipe} className="bg-blue-600 text-white px-3 rounded font-bold">+</button></div>
+                            <div className="space-y-1 max-h-32 overflow-y-auto mb-2">{(data.recipe || []).map((ing, idx) => (<div key={idx} className="flex justify-between text-xs bg-gray-50 p-1 rounded border"><span>{ing.name} ({ing.qty}{ing.unit})</span> <button type="button" onClick={()=>removeIngFromRecipe(idx)} className="text-red-500 font-bold">x</button></div>))}</div>
+                            <div className="grid grid-cols-3 gap-2 text-xs border-t pt-2 bg-gray-50 p-2 rounded"><div>Custo:<br/><b className="text-red-600">{formatMoney(metrics.totalCost)}</b></div><div>Sugerido:<br/><b className="text-blue-600">{formatMoney(metrics.suggested)}</b></div><div>iFood (27%):<br/><b className="text-orange-600">{formatMoney(metrics.ifood)}</b></div></div>
+                            <div className="mt-2"><button type="button" onClick={()=>setData({...data, price: metrics.suggested})} className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded mr-2">Usar Sugerido</button><button type="button" onClick={()=>setData({...data, price: metrics.ifood.toFixed(2)})} className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded">Usar iFood</button></div>
                         </div>
-
                         <div className="flex gap-2"><button type="submit" className="flex-1 text-white py-2 rounded font-bold" style={theme}>Salvar</button><button type="button" onClick={()=>setEdit(false)} className="flex-1 border py-2 rounded text-gray-600">Cancelar</button></div>
                     </form>}
-
-                    {/* LISTA DE PRODUTOS */}
-                    <div className="grid gap-2">
-                        {products.map(p => { 
-                            const m = getMetrics(p); 
-                            return (
-                                <div key={p.id} className="flex justify-between items-center border p-3 rounded bg-white shadow-sm">
-                                    <div className="flex items-center gap-3">
-                                        {p.imageUrl && <img src={p.imageUrl} className="w-10 h-10 rounded object-cover"/>}
-                                        <div>
-                                            <h4 className="font-bold">{p.name}</h4>
-                                            <div className="text-xs flex gap-2 mt-1">
-                                                <span className="bg-gray-100 px-2 rounded border text-gray-600">{p.category}</span>
-                                                <span className="text-orange-600 font-bold bg-orange-50 px-2 rounded border border-orange-100">iFood: {formatMoney(m.ifood)}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <span className="font-bold text-lg">{formatMoney(p.price)}</span>
-                                        <div className="flex gap-1">
-                                            <button onClick={()=>{setData(p);setEdit(true)}} className="text-blue-500 p-2"><i className="fa-solid fa-pen"></i></button>
-                                            <button onClick={()=>del(p.id)} className="text-red-500 p-2"><i className="fa-solid fa-trash"></i></button>
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
+                    <div className="grid gap-2">{products.map(p => { const m = getMetrics(p); return (
+                        <div key={p.id} className="flex justify-between items-center border p-3 rounded bg-white shadow-sm">
+                            <div className="flex items-center gap-3">{p.imageUrl && <img src={p.imageUrl} className="w-10 h-10 rounded object-cover"/>}<div><h4 className="font-bold">{p.name}</h4><div className="text-xs flex gap-2 mt-1"><span className="bg-gray-100 px-2 rounded border text-gray-600">{p.category}</span><span className="text-orange-600 font-bold bg-orange-50 px-2 rounded border border-orange-100">iFood: {formatMoney(m.ifood)}</span></div></div></div>
+                            <div className="flex items-center gap-3"><span className="font-bold text-lg">{formatMoney(p.price)}</span><div className="flex gap-1"><button onClick={()=>{setData(p);setEdit(true)}} className="text-blue-500 p-2"><i className="fa-solid fa-pen"></i></button><button onClick={()=>del(p.id)} className="text-red-500 p-2"><i className="fa-solid fa-trash"></i></button></div></div>
+                        </div>
+                    );})}</div>
                 </div>
             ); 
         }
@@ -216,136 +252,32 @@
         // --- ADMIN INSUMOS ---
         function AdminIngredients({ ingredients, settings, theme, showAlert, showConfirm }) {
             const [data, setData] = useState({ name: "", unit: "kg", cost: "" });
-            
-            const save = async (e) => { 
-                e.preventDefault(); 
-                const cost = parseFloat(data.cost);
-                if(data.id) {
-                    // Atualiza Insumo
-                    await getCol('ingredients').doc(data.id).update({...data, cost});
-                    // Pergunta se quer atualizar produtos (Efeito Dominó)
-                    showConfirm("Atualizar Preços?", "Deseja recalcular o preço de todos os produtos que usam este insumo?", async () => {
-                        const batch = db.batch();
-                        const allProducts = await getCol('products').get();
-                        let count = 0;
-                        allProducts.docs.forEach(doc => {
-                            const prod = doc.data();
-                            if(prod.recipe && prod.recipe.some(r => r.id === data.id)) {
-                                const newRecipe = prod.recipe.map(r => r.id === data.id ? {...r, cost, name: data.name} : r);
-                                const totalCost = newRecipe.reduce((acc, item) => {
-                                    const ingRef = ingredients.find(i => i.id === item.id);
-                                    const currentCost = (item.id === data.id) ? cost : (ingRef ? ingRef.cost : item.cost);
-                                    return acc + (currentCost * item.qty);
-                                }, 0);
-                                const newPrice = calculateSmartPrice(totalCost, settings.targetCMV || 35);
-                                batch.update(doc.ref, { recipe: newRecipe, price: newPrice });
-                                count++;
-                            }
-                        });
-                        if(count > 0) { await batch.commit(); showAlert("Sucesso", `${count} produtos atualizados!`, "success"); }
-                        else showAlert("Info", "Nenhum produto usava este insumo.", "info");
-                    });
-                } else {
-                    await getCol('ingredients').add({...data, cost}); 
-                    showAlert("Sucesso", "Criado!", 'success'); 
-                }
-                setData({name:"", unit:"kg", cost:""}); 
-            };
-
+            const save = async (e) => { e.preventDefault(); const cost = parseFloat(data.cost); if(data.id) { await getCol('ingredients').doc(data.id).update({...data, cost}); showConfirm("Atualizar Preços?", "Deseja recalcular o preço de todos os produtos que usam este insumo?", async () => { const batch = db.batch(); const allProducts = await getCol('products').get(); let count = 0; allProducts.docs.forEach(doc => { const prod = doc.data(); if(prod.recipe && prod.recipe.some(r => r.id === data.id)) { const newRecipe = prod.recipe.map(r => r.id === data.id ? {...r, cost, name: data.name} : r); const totalCost = newRecipe.reduce((acc, item) => { const ingRef = ingredients.find(i => i.id === item.id); const currentCost = (item.id === data.id) ? cost : (ingRef ? ingRef.cost : item.cost); return acc + (currentCost * item.qty); }, 0); const newPrice = calculateSmartPrice(totalCost, settings.targetCMV || 35); batch.update(doc.ref, { recipe: newRecipe, price: newPrice }); count++; } }); if(count > 0) { await batch.commit(); showAlert("Sucesso", `${count} produtos atualizados!`, "success"); } else showAlert("Info", "Nenhum produto usava este insumo.", "info"); }); } else { await getCol('ingredients').add({...data, cost}); showAlert("Sucesso", "Criado!", 'success'); } setData({name:"", unit:"kg", cost:""}); };
             const del = (id) => showConfirm("Excluir", "Apagar?", async () => await getCol('ingredients').doc(id).delete());
-            
-            return (
-                <div>
-                    <form onSubmit={save} className="bg-gray-50 p-4 rounded-lg mb-4 border space-y-3">
-                        <div className="grid grid-cols-3 gap-3">
-                            <input placeholder="Nome" className="border p-2 rounded" value={data.name} onChange={e=>setData({...data, name:e.target.value})} />
-                            <select className="border p-2 rounded" value={data.unit} onChange={e=>setData({...data, unit:e.target.value})}><option value="kg">Kg</option><option value="lt">Lt</option><option value="un">Un</option></select>
-                            <input type="number" step="0.01" placeholder="Custo" className="border p-2 rounded" value={data.cost} onChange={e=>setData({...data, cost:e.target.value})} />
-                        </div>
-                        <button className="w-full text-white px-4 py-2 rounded font-bold" style={theme}>Salvar Insumo</button>
-                    </form>
-                    <div className="space-y-2">{ingredients.map(i => (<div key={i.id} className="flex justify-between border p-3 rounded bg-white items-center"><div><b>{i.name}</b> <span className="text-xs text-gray-500">({i.unit})</span></div><div className="flex gap-3 items-center"><span className="text-green-600 font-bold">{formatMoney(i.cost)}</span><button onClick={()=>setData(i)} className="text-blue-500"><i className="fa-solid fa-pen"></i></button><button onClick={()=>del(i.id)} className="text-red-500"><i className="fa-solid fa-trash"></i></button></div></div>))}</div>
-                </div>
-            );
+            return ( <div><form onSubmit={save} className="bg-gray-50 p-4 rounded-lg mb-4 border space-y-3"><div className="grid grid-cols-3 gap-3"><input placeholder="Nome" className="border p-2 rounded" value={data.name} onChange={e=>setData({...data, name:e.target.value})} /><select className="border p-2 rounded" value={data.unit} onChange={e=>setData({...data, unit:e.target.value})}><option value="kg">Kg</option><option value="lt">Lt</option><option value="un">Un</option></select><input type="number" step="0.01" placeholder="Custo" className="border p-2 rounded" value={data.cost} onChange={e=>setData({...data, cost:e.target.value})} /></div><button className="w-full text-white px-4 py-2 rounded font-bold" style={theme}>Salvar Insumo</button></form><div className="space-y-2">{ingredients.map(i => (<div key={i.id} className="flex justify-between border p-3 rounded bg-white items-center"><div><b>{i.name}</b> <span className="text-xs text-gray-500">({i.unit})</span></div><div className="flex gap-3 items-center"><span className="text-green-600 font-bold">{formatMoney(i.cost)}</span><button onClick={()=>setData(i)} className="text-blue-500"><i className="fa-solid fa-pen"></i></button><button onClick={()=>del(i.id)} className="text-red-500"><i className="fa-solid fa-trash"></i></button></div></div>))}</div></div> );
         }
         
-        // --- ADMIN CUPONS AVANÇADO ---
+        // --- ADMIN CUPONS ---
         function AdminCoupons({ theme, showAlert, showConfirm }) { 
             const [coupons, setCoupons] = useState([]); 
             const [form, setForm] = useState({ code: "", type: "fixed", value: "", limit: 100, maxDiscount: "" }); 
             useEffect(() => { const u = getCol('coupons').onSnapshot(s => setCoupons(s.docs.map(d => ({ id: d.id, ...d.data() })))); return () => u(); }, []); 
-            
-            const save = async (e) => { 
-                e.preventDefault(); 
-                if(!form.code) return; 
-                const payload = { 
-                    ...form, 
-                    code: form.code.toUpperCase(), 
-                    usageCount: 0, 
-                    active: true, 
-                    createdAt: new Date().toISOString(),
-                    limit: parseInt(form.limit),
-                    value: parseFloat(form.value)
-                }; 
-                if(form.maxDiscount) payload.maxDiscount = parseFloat(form.maxDiscount);
-                await getCol('coupons').add(payload); 
-                setForm({ code: "", type: "fixed", value: "", limit: 100, maxDiscount: "" }); 
-                showAlert("Sucesso","Criado",'success'); 
-            }; 
-            
+            const save = async (e) => { e.preventDefault(); if(!form.code) return; const payload = { ...form, code: form.code.toUpperCase(), usageCount: 0, active: true, createdAt: new Date().toISOString(), limit: parseInt(form.limit), value: parseFloat(form.value) }; if(form.maxDiscount) payload.maxDiscount = parseFloat(form.maxDiscount); await getCol('coupons').add(payload); setForm({ code: "", type: "fixed", value: "", limit: 100, maxDiscount: "" }); showAlert("Sucesso","Criado",'success'); }; 
             const del = (id) => showConfirm("Excluir", "Apagar?", async () => await getCol('coupons').doc(id).delete()); 
-            
             return (
                 <div>
                     <form onSubmit={save} className="bg-gray-50 p-4 rounded-lg mb-4 border space-y-3 shadow-sm">
                         <h4 className="font-bold text-gray-700">Novo Cupom</h4>
-                        <div className="grid grid-cols-2 gap-3">
-                            <input placeholder="CÓDIGO (Ex: WELCOME10)" className="border p-2 rounded uppercase font-bold" value={form.code} onChange={e=>setForm({...form, code:e.target.value})} />
-                            <select className="border p-2 rounded" value={form.type} onChange={e=>setForm({...form, type:e.target.value})}>
-                                <option value="fixed">Valor Fixo (R$)</option>
-                                <option value="percent">Porcentagem (%)</option>
-                                <option value="shipping">Entrega Grátis</option>
-                            </select>
-                        </div>
-                        <div className="grid grid-cols-3 gap-3">
-                            <input type="number" placeholder={form.type==='percent'?'Valor %':'Valor R$'} className="border p-2 rounded" value={form.value} onChange={e=>setForm({...form, value:e.target.value})} disabled={form.type==='shipping'} />
-                            <input type="number" placeholder="Qtd Limite" className="border p-2 rounded" value={form.limit} onChange={e=>setForm({...form, limit:e.target.value})} />
-                            <input type="number" placeholder="Teto Máx (R$)" className="border p-2 rounded" value={form.maxDiscount} onChange={e=>setForm({...form, maxDiscount:e.target.value})} disabled={form.type==='fixed'} />
-                        </div>
+                        <div className="grid grid-cols-2 gap-3"><input placeholder="CÓDIGO (Ex: WELCOME10)" className="border p-2 rounded uppercase font-bold" value={form.code} onChange={e=>setForm({...form, code:e.target.value})} /><select className="border p-2 rounded" value={form.type} onChange={e=>setForm({...form, type:e.target.value})}><option value="fixed">Valor Fixo (R$)</option><option value="percent">Porcentagem (%)</option><option value="shipping">Entrega Grátis</option></select></div>
+                        <div className="grid grid-cols-3 gap-3"><input type="number" placeholder={form.type==='percent'?'Valor %':'Valor R$'} className="border p-2 rounded" value={form.value} onChange={e=>setForm({...form, value:e.target.value})} disabled={form.type==='shipping'} /><input type="number" placeholder="Qtd Limite" className="border p-2 rounded" value={form.limit} onChange={e=>setForm({...form, limit:e.target.value})} /><input type="number" placeholder="Teto Máx (R$)" className="border p-2 rounded" value={form.maxDiscount} onChange={e=>setForm({...form, maxDiscount:e.target.value})} disabled={form.type==='fixed'} /></div>
                         <button className="w-full text-white py-2 rounded font-bold" style={theme}>Criar Cupom</button>
                     </form>
-                    <div className="grid gap-3">
-                        {coupons.map(c => {
-                            const usage = c.usageCount || 0;
-                            const limit = c.limit || 100;
-                            const percent = Math.min(100, (usage/limit)*100);
-                            return (
-                                <div key={c.id} className="border p-3 rounded bg-white shadow-sm">
-                                    <div className="flex justify-between mb-2">
-                                        <div>
-                                            <b className="text-lg text-gray-800">{c.code}</b>
-                                            <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                                                {c.type==='shipping' ? 'Entrega Grátis' : c.type==='percent' ? `${c.value}% OFF` : `R$ ${c.value} OFF`}
-                                            </span>
-                                        </div>
-                                        <button onClick={()=>del(c.id)} className="text-red-500"><i className="fa-solid fa-trash"></i></button>
-                                    </div>
-                                    <div className="w-full bg-gray-200 rounded-full h-2.5">
-                                        <div className="bg-blue-600 h-2.5 rounded-full" style={{width: `${percent}%`}}></div>
-                                    </div>
-                                    <div className="flex justify-between text-xs text-gray-500 mt-1">
-                                        <span>Usado: {usage} / {limit}</span>
-                                        <span>{percent.toFixed(0)}% esgotado</span>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
+                    <div className="grid gap-3">{coupons.map(c => { const usage = c.usageCount || 0; const limit = c.limit || 100; const percent = Math.min(100, (usage/limit)*100); return ( <div key={c.id} className="border p-3 rounded bg-white shadow-sm"> <div className="flex justify-between mb-2"> <div><b className="text-lg text-gray-800">{c.code}</b> <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">{c.type==='shipping' ? 'Entrega Grátis' : c.type==='percent' ? `${c.value}% OFF` : `R$ ${c.value} OFF`}</span></div> <button onClick={()=>del(c.id)} className="text-red-500"><i className="fa-solid fa-trash"></i></button> </div> <div className="w-full bg-gray-200 rounded-full h-2.5"><div className="bg-blue-600 h-2.5 rounded-full" style={{width: `${percent}%`}}></div></div> <div className="flex justify-between text-xs text-gray-500 mt-1"><span>Usado: {usage} / {limit}</span><span>{percent.toFixed(0)}% esgotado</span></div> </div> ); })}</div>
                 </div>
             ); 
         }
 
-        // --- ADMIN CLIENTES AVANÇADO ---
+        // --- ADMIN CLIENTES ---
         function AdminCustomers({ showAlert }) { 
             const [all, setAll] = useState([]); const [filter, setFilter] = useState("all"); 
             useEffect(() => { const u = getCol('customers').limit(2000).onSnapshot(s => setAll(s.docs.map(d => ({ id: d.id, ...d.data() })))); return () => u(); }, []); 
@@ -364,7 +296,7 @@
             ); 
         }
 
-        // --- CONFIGURAÇÃO GERAL (COM RECALCULAR TUDO) ---
+        // --- CONFIGURAÇÃO GERAL ---
         function AdminConfig({ settings, categories, theme, showAlert, showConfirm, ingredients, products }) { 
             const [data, setData] = useState(settings); const [tab, setTab] = useState('visual'); const [nC, setNC] = useState(""); 
             const handleChange = (k, v) => setData(p=>({...p, [k]:v})); 
@@ -377,7 +309,7 @@
             const placeholders = [{k: "{nome}", l: "Nome"}, {k: "{telefone}", l: "Fone"}, {k: "{endereco}", l: "Rua e Nº"}, {k: "{bairro}", l: "Bairro"}, {k: "{complemento}", l: "Obs (Se houver)"}, {k: "{itens}", l: "Lista de Itens"}, {k: "{total}", l: "Valor Final"}, {k: "{subtotal}", l: "Subtotal"}, {k: "{entrega}", l: "Taxa"}, {k: "{pagamento}", l: "Forma Pagto"}, {k: "{troco}", l: "Troco (Se houver)"}, {k: "{cupom}", l: "Cupom (Se houver)"}, {k: "{link_rastreio}", l: "Link"}];
             const defaultTemplate = "*NOVO PEDIDO - {nome_app}*\n{nome}\n{telefone}\n\n📍 {endereco} - {bairro}\n{complemento}\n\n🛒 *ITENS:*\n{itens}\n\n💰 *RESUMO:*\nSubtotal: {subtotal}\nEntrega: {entrega}\n*TOTAL: {total}*\n\n💳 {pagamento}\n{troco}\n{cupom}\n\n🛵 *Acompanhe:*\n{link_rastreio}";
             
-            // FUNÇÃO DE RECALCULAR TUDO NA ABA OPERAÇÃO
+            // RECALCULAR TUDO
             const bulkUpdate = async () => {
                 showConfirm("Recalcular TUDO?", "Isso atualizará o preço de TODOS os produtos com base no CMV de " + (data.targetCMV||35) + "%.", async () => {
                     const batch = db.batch();
@@ -454,14 +386,13 @@
 
         function App() {
             const [user, setUser] = useState(null); const [view, setView] = useState('dashboard'); const [products, setProducts] = useState([]); const [categories, setCategories] = useState([]); const [ingredients, setIngredients] = useState([]); const [settings, setSettings] = useState({}); const [loading, setLoading] = useState(true); const [sidebarOpen, setSidebarOpen] = useState(false); const [modal, setModal] = useState({ isOpen: false, title: '', message: '', type: 'info', onConfirm: null });
-            const [onlineCount, setOnlineCount] = useState(0); // Visitantes Online
+            const [onlineCount, setOnlineCount] = useState(0);
 
             const showAlert = (title, message, type='info') => setModal({ isOpen: true, title, message, type });
             const showConfirm = (title, message, onConfirm) => setModal({ isOpen: true, title, message, type: 'confirm', onConfirm });
             const closeModal = () => setModal({ ...modal, isOpen: false });
             useEffect(() => { auth.onAuthStateChanged(u => { setUser(u); if(u) fetchData(); else setLoading(false); }); }, []);
             
-            // --- CONTADOR ONLINE ---
             useEffect(() => {
                 const unsub = getCol('active_visitors').onSnapshot(snapshot => {
                     const now = new Date();
@@ -486,7 +417,6 @@
             const handleLogin = async (email, password) => { setLoading(true); try { await auth.signInWithEmailAndPassword(email, password); } catch (error) { showAlert("Erro", "Login inválido.", "error"); setLoading(false); } };
             const themeStyle = { backgroundColor: settings.themeColor || '#dc2626' };
             
-            // --- AUTH GUARD REFORÇADO ---
             if (loading && !user) return <div className="min-h-screen flex items-center justify-center text-gray-400"><i className="fa-solid fa-spinner fa-spin text-3xl"></i></div>;
             if (!user) return <><LoginView onLogin={handleLogin} loading={loading} /><GlobalModal modal={modal} close={closeModal} /></>;
 
@@ -506,14 +436,9 @@
                             </nav>
                         </div>
                         
-                        {/* RODAPÉ COM CONTADOR ONLINE E BOTÃO SAIR */}
                         <div className="p-4 bg-black/10 border-t border-white/10 text-white">
-                             <div className="flex items-center justify-center gap-2 text-xs mb-3 bg-black/20 p-2 rounded-full border border-white/10">
-                                <span className="pulse-dot"></span> {onlineCount} Visitantes Online
-                             </div>
-                             <button onClick={() => auth.signOut()} className="w-full text-left p-3 rounded-lg flex items-center gap-3 text-white hover:bg-white/20 transition font-bold text-red-100 hover:text-white">
-                                <i className="fa-solid fa-right-from-bracket w-6 text-center"></i> Sair do Sistema
-                            </button>
+                             <div className="flex items-center justify-center gap-2 text-xs mb-3 bg-black/20 p-2 rounded-full border border-white/10"><span className="w-2 h-2 bg-green-500 rounded-full"></span> {onlineCount} Online</div>
+                             <button onClick={() => auth.signOut()} className="w-full text-left p-3 rounded-lg flex items-center gap-3 text-white hover:bg-white/20 transition font-bold text-red-100 hover:text-white"><i className="fa-solid fa-right-from-bracket w-6 text-center"></i> Sair</button>
                         </div>
                     </div>
                     
